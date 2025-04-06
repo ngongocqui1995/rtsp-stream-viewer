@@ -1,0 +1,7 @@
+PySide6>=6.9.0
+opencv-python>=4.7.0.72
+python-ffmpeg>=2.0.4
+scikit-image>=0.20.0
+sshkeyboard>=2.3.1
+ultralytics>=8.0.115
+deep-sort-realtime>=1.3.2
