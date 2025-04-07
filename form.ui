@@ -1649,6 +1649,32 @@
      <string>Yolo:</string>
     </property>
    </widget>
+   <widget class="QLabel" name="worker_1_label">
+    <property name="geometry">
+     <rect>
+      <x>10</x>
+      <y>725</y>
+      <width>101</width>
+      <height>21</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string>Worker 1:</string>
+    </property>
+   </widget>
+   <widget class="QLabel" name="worker_2_label">
+    <property name="geometry">
+     <rect>
+      <x>117</x>
+      <y>725</y>
+      <width>111</width>
+      <height>21</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string>Worker 2:</string>
+    </property>
+   </widget>
   </widget>
   <widget class="QStatusBar" name="statusbar"/>
  </widget>

@@ -45,6 +45,7 @@ class MainWindow(QMainWindow):
         # Initialize DeepSORT tracker
         self.tracker = DeepSort(max_age=30)
         self.counted_tracks = {}
+        self.worker_lock = threading.Lock()
 
         self.ai_cbb = self.findChild(QComboBox, "ai_cbb")
         self.ai_cbb.currentTextChanged.connect(self.update_model)
@@ -71,6 +72,8 @@ class MainWindow(QMainWindow):
         self.token_input.setEchoMode(QLineEdit.EchoMode.Password)
         self.yolo_label = self.findChild(QLabel, "yolo_label")
         self.read_label = self.findChild(QLabel, "read_label")
+        self.worker_1_label = self.findChild(QLabel, "worker_1_label")
+        self.worker_2_label = self.findChild(QLabel, "worker_2_label")
         self.reset_detection_btn = self.findChild(QPushButton, "reset_detection_btn")
         self.reset_detection_btn.clicked.connect(self.reset_detection)
         self.checkboxes = []
@@ -167,8 +170,8 @@ class MainWindow(QMainWindow):
         self.read_thread.start()
 
         # Khởi chạy 2 worker để xử lý YOLO song song
-        for _ in range(2):
-            self.executor.submit(self.process_yolo_worker)
+        self.executor.submit(self.process_yolo_worker, 1)  # Worker 1
+        self.executor.submit(self.process_yolo_worker, 2)  # Worker 2
 
         # Khởi chạy luồng xử lý khung hình
         self.process_thread = threading.Thread(target=self.process_frames, daemon=True)
@@ -323,7 +326,7 @@ class MainWindow(QMainWindow):
             except queue.Empty:
                 pass
             
-    def process_yolo_worker(self):
+    def process_yolo_worker(self, worker_id):
         """Worker function to process frames from the YOLO queue in batches"""
         batch_size = 10
         batch = []
@@ -333,6 +336,12 @@ class MainWindow(QMainWindow):
             try:
                 # Lấy khung hình từ hàng đợi với timeout
                 frame = self.yolo_queue.get(timeout=1)
+
+                with self.worker_lock:
+                    if worker_id == 1:
+                        self.worker_1_label.setText(f"Worker 1: {len(batch) + 1}")
+                    elif worker_id == 2:
+                        self.worker_2_label.setText(f"Worker 2: {len(batch) + 1}")
 
                 # Xác định vùng trung tâm
                 h, w, _ = frame.shape

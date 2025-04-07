@@ -404,6 +404,12 @@ class Ui_MainWindow(object):
         self.yolo_label = QLabel(self.centralwidget)
         self.yolo_label.setObjectName(u"yolo_label")
         self.yolo_label.setGeometry(QRect(940, 720, 111, 31))
+        self.worker_1_label = QLabel(self.centralwidget)
+        self.worker_1_label.setObjectName(u"worker_1_label")
+        self.worker_1_label.setGeometry(QRect(10, 725, 101, 21))
+        self.worker_2_label = QLabel(self.centralwidget)
+        self.worker_2_label.setObjectName(u"worker_2_label")
+        self.worker_2_label.setGeometry(QRect(117, 725, 111, 21))
         MainWindow.setCentralWidget(self.centralwidget)
         self.statusbar = QStatusBar(MainWindow)
         self.statusbar.setObjectName(u"statusbar")
@@ -563,5 +569,7 @@ class Ui_MainWindow(object):
         self.stop_btn.setText(QCoreApplication.translate("MainWindow", u"Stop", None))
         self.read_label.setText(QCoreApplication.translate("MainWindow", u"Read:", None))
         self.yolo_label.setText(QCoreApplication.translate("MainWindow", u"Yolo:", None))
+        self.worker_1_label.setText(QCoreApplication.translate("MainWindow", u"Worker 1:", None))
+        self.worker_2_label.setText(QCoreApplication.translate("MainWindow", u"Worker 2:", None))
     # retranslateUi
 
