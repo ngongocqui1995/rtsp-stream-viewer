@@ -183,6 +183,8 @@ class MainWindow(QMainWindow):
         self.pass_input.setEnabled(False)
         self.protocol_cbb.setEnabled(False)
         self.stream_path_input.setEnabled(False)
+        for checkbox in self.checkboxes:
+            checkbox.setEnabled(False)
         self.update_model(self.ai_cbb.currentText())
         self.setWindowTitle(self.host)
 
@@ -221,9 +223,16 @@ class MainWindow(QMainWindow):
         self.graphics_scene.addText("Stream stopped!")
         self.start_btn.setEnabled(True)
         self.stop_btn.setEnabled(False)
-        self.setWindowTitle("RTSP Stream Viewer")
+        self.host_input.setEnabled(True)
+        self.port_input.setEnabled(True)
+        self.user_input.setEnabled(True)
+        self.pass_input.setEnabled(True)
+        self.protocol_cbb.setEnabled(True)
+        self.stream_path_input.setEnabled(True)
         for checkbox in self.checkboxes:
+            checkbox.setEnabled(True)
             checkbox.setText(checkbox.objectName().replace("_chkbox", "").replace("_", " "))
+        self.setWindowTitle("RTSP Stream Viewer")
 
     def process_frame(self, frame):
         """Process a single frame and update the UI"""
