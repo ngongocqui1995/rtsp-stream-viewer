@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>1000</width>
-    <height>756</height>
+    <width>1188</width>
+    <height>775</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -21,9 +21,9 @@
     <property name="geometry">
      <rect>
       <x>10</x>
-      <y>400</y>
-      <width>981</width>
-      <height>301</height>
+      <y>460</y>
+      <width>1171</width>
+      <height>261</height>
      </rect>
     </property>
     <property name="font">
@@ -40,7 +40,7 @@
     <widget class="QCheckBox" name="bicycle_chkbox">
      <property name="geometry">
       <rect>
-       <x>110</x>
+       <x>100</x>
        <y>30</y>
        <width>85</width>
        <height>20</height>
@@ -68,7 +68,7 @@
       <rect>
        <x>310</x>
        <y>30</y>
-       <width>85</width>
+       <width>101</width>
        <height>20</height>
       </rect>
      </property>
@@ -79,7 +79,7 @@
     <widget class="QCheckBox" name="aeroplane_chkbox">
      <property name="geometry">
       <rect>
-       <x>400</x>
+       <x>410</x>
        <y>30</y>
        <width>111</width>
        <height>20</height>
@@ -92,7 +92,7 @@
     <widget class="QCheckBox" name="bus_chkbox">
      <property name="geometry">
       <rect>
-       <x>520</x>
+       <x>540</x>
        <y>30</y>
        <width>85</width>
        <height>20</height>
@@ -105,7 +105,7 @@
     <widget class="QCheckBox" name="train_chkbox">
      <property name="geometry">
       <rect>
-       <x>600</x>
+       <x>640</x>
        <y>30</y>
        <width>85</width>
        <height>20</height>
@@ -118,7 +118,7 @@
     <widget class="QCheckBox" name="person_chkbox">
      <property name="geometry">
       <rect>
-       <x>20</x>
+       <x>0</x>
        <y>30</y>
        <width>85</width>
        <height>20</height>
@@ -131,7 +131,7 @@
     <widget class="QCheckBox" name="truck_chkbox">
      <property name="geometry">
       <rect>
-       <x>700</x>
+       <x>740</x>
        <y>30</y>
        <width>85</width>
        <height>20</height>
@@ -144,7 +144,7 @@
     <widget class="QCheckBox" name="boat_chkbox">
      <property name="geometry">
       <rect>
-       <x>20</x>
+       <x>0</x>
        <y>60</y>
        <width>85</width>
        <height>20</height>
@@ -157,7 +157,7 @@
     <widget class="QCheckBox" name="traffic_light_chkbox">
      <property name="geometry">
       <rect>
-       <x>110</x>
+       <x>100</x>
        <y>60</y>
        <width>85</width>
        <height>20</height>
@@ -185,7 +185,7 @@
       <rect>
        <x>310</x>
        <y>60</y>
-       <width>85</width>
+       <width>101</width>
        <height>20</height>
       </rect>
      </property>
@@ -196,9 +196,9 @@
     <widget class="QCheckBox" name="parking_meter_chkbox">
      <property name="geometry">
       <rect>
-       <x>400</x>
+       <x>410</x>
        <y>60</y>
-       <width>111</width>
+       <width>121</width>
        <height>20</height>
       </rect>
      </property>
@@ -209,7 +209,7 @@
     <widget class="QCheckBox" name="bench_chkbox">
      <property name="geometry">
       <rect>
-       <x>520</x>
+       <x>540</x>
        <y>60</y>
        <width>85</width>
        <height>20</height>
@@ -222,7 +222,7 @@
     <widget class="QCheckBox" name="bird_chkbox">
      <property name="geometry">
       <rect>
-       <x>600</x>
+       <x>640</x>
        <y>60</y>
        <width>85</width>
        <height>20</height>
@@ -235,7 +235,7 @@
     <widget class="QCheckBox" name="cat_chkbox">
      <property name="geometry">
       <rect>
-       <x>800</x>
+       <x>850</x>
        <y>30</y>
        <width>85</width>
        <height>20</height>
@@ -248,7 +248,7 @@
     <widget class="QCheckBox" name="dog_chkbox">
      <property name="geometry">
       <rect>
-       <x>20</x>
+       <x>0</x>
        <y>90</y>
        <width>81</width>
        <height>20</height>
@@ -261,7 +261,7 @@
     <widget class="QCheckBox" name="horse_chkbox">
      <property name="geometry">
       <rect>
-       <x>110</x>
+       <x>100</x>
        <y>90</y>
        <width>85</width>
        <height>20</height>
@@ -300,9 +300,9 @@
     <widget class="QCheckBox" name="elephant_chkbox">
      <property name="geometry">
       <rect>
-       <x>400</x>
+       <x>410</x>
        <y>90</y>
-       <width>85</width>
+       <width>121</width>
        <height>20</height>
       </rect>
      </property>
@@ -313,7 +313,7 @@
     <widget class="QCheckBox" name="bear_chkbox">
      <property name="geometry">
       <rect>
-       <x>520</x>
+       <x>540</x>
        <y>90</y>
        <width>85</width>
        <height>20</height>
@@ -326,7 +326,7 @@
     <widget class="QCheckBox" name="zebra_chkbox">
      <property name="geometry">
       <rect>
-       <x>600</x>
+       <x>640</x>
        <y>90</y>
        <width>85</width>
        <height>20</height>
@@ -339,7 +339,7 @@
     <widget class="QCheckBox" name="giraffe_chkbox">
      <property name="geometry">
       <rect>
-       <x>800</x>
+       <x>850</x>
        <y>60</y>
        <width>85</width>
        <height>20</height>
@@ -352,7 +352,7 @@
     <widget class="QCheckBox" name="backpack_chkbox">
      <property name="geometry">
       <rect>
-       <x>20</x>
+       <x>0</x>
        <y>120</y>
        <width>85</width>
        <height>20</height>
@@ -365,7 +365,7 @@
     <widget class="QCheckBox" name="umbrella_chkbox">
      <property name="geometry">
       <rect>
-       <x>110</x>
+       <x>100</x>
        <y>120</y>
        <width>85</width>
        <height>20</height>
@@ -404,7 +404,7 @@
     <widget class="QCheckBox" name="suitcase_chkbox">
      <property name="geometry">
       <rect>
-       <x>400</x>
+       <x>410</x>
        <y>120</y>
        <width>85</width>
        <height>20</height>
@@ -417,7 +417,7 @@
     <widget class="QCheckBox" name="frisbee_chkbox">
      <property name="geometry">
       <rect>
-       <x>520</x>
+       <x>540</x>
        <y>120</y>
        <width>85</width>
        <height>20</height>
@@ -430,7 +430,7 @@
     <widget class="QCheckBox" name="skis_chkbox">
      <property name="geometry">
       <rect>
-       <x>600</x>
+       <x>640</x>
        <y>120</y>
        <width>85</width>
        <height>20</height>
@@ -443,7 +443,7 @@
     <widget class="QCheckBox" name="snowboard_chkbox">
      <property name="geometry">
       <rect>
-       <x>700</x>
+       <x>740</x>
        <y>60</y>
        <width>91</width>
        <height>20</height>
@@ -456,7 +456,7 @@
     <widget class="QCheckBox" name="kite_chkbox">
      <property name="geometry">
       <rect>
-       <x>20</x>
+       <x>0</x>
        <y>150</y>
        <width>85</width>
        <height>20</height>
@@ -469,7 +469,7 @@
     <widget class="QCheckBox" name="baseball_bat_chkbox">
      <property name="geometry">
       <rect>
-       <x>110</x>
+       <x>100</x>
        <y>150</y>
        <width>101</width>
        <height>20</height>
@@ -482,7 +482,7 @@
     <widget class="QCheckBox" name="baseball_glove_chkbox">
      <property name="geometry">
       <rect>
-       <x>400</x>
+       <x>410</x>
        <y>150</y>
        <width>111</width>
        <height>20</height>
@@ -508,7 +508,7 @@
     <widget class="QCheckBox" name="bottle_chkbox">
      <property name="geometry">
       <rect>
-       <x>520</x>
+       <x>540</x>
        <y>150</y>
        <width>85</width>
        <height>20</height>
@@ -521,7 +521,7 @@
     <widget class="QCheckBox" name="wine_glass_chkbox">
      <property name="geometry">
       <rect>
-       <x>600</x>
+       <x>640</x>
        <y>150</y>
        <width>85</width>
        <height>20</height>
@@ -534,7 +534,7 @@
     <widget class="QCheckBox" name="cup_chkbox">
      <property name="geometry">
       <rect>
-       <x>700</x>
+       <x>740</x>
        <y>90</y>
        <width>85</width>
        <height>20</height>
@@ -547,7 +547,7 @@
     <widget class="QCheckBox" name="fork_chkbox">
      <property name="geometry">
       <rect>
-       <x>20</x>
+       <x>0</x>
        <y>180</y>
        <width>85</width>
        <height>20</height>
@@ -560,7 +560,7 @@
     <widget class="QCheckBox" name="knife_chkbox">
      <property name="geometry">
       <rect>
-       <x>110</x>
+       <x>100</x>
        <y>180</y>
        <width>85</width>
        <height>20</height>
@@ -599,7 +599,7 @@
     <widget class="QCheckBox" name="tennis_racket_chkbox">
      <property name="geometry">
       <rect>
-       <x>400</x>
+       <x>410</x>
        <y>180</y>
        <width>111</width>
        <height>20</height>
@@ -612,7 +612,7 @@
     <widget class="QCheckBox" name="banana_chkbox">
      <property name="geometry">
       <rect>
-       <x>520</x>
+       <x>540</x>
        <y>180</y>
        <width>85</width>
        <height>20</height>
@@ -625,7 +625,7 @@
     <widget class="QCheckBox" name="apple_chkbox">
      <property name="geometry">
       <rect>
-       <x>600</x>
+       <x>640</x>
        <y>180</y>
        <width>85</width>
        <height>20</height>
@@ -638,7 +638,7 @@
     <widget class="QCheckBox" name="sandwich_chkbox">
      <property name="geometry">
       <rect>
-       <x>800</x>
+       <x>850</x>
        <y>90</y>
        <width>85</width>
        <height>20</height>
@@ -664,7 +664,7 @@
     <widget class="QCheckBox" name="orange_chkbox">
      <property name="geometry">
       <rect>
-       <x>20</x>
+       <x>0</x>
        <y>210</y>
        <width>85</width>
        <height>20</height>
@@ -677,7 +677,7 @@
     <widget class="QCheckBox" name="broccoli_chkbox">
      <property name="geometry">
       <rect>
-       <x>110</x>
+       <x>100</x>
        <y>210</y>
        <width>85</width>
        <height>20</height>
@@ -716,7 +716,7 @@
     <widget class="QCheckBox" name="pizza_chkbox">
      <property name="geometry">
       <rect>
-       <x>400</x>
+       <x>410</x>
        <y>210</y>
        <width>85</width>
        <height>20</height>
@@ -729,7 +729,7 @@
     <widget class="QCheckBox" name="donut_chkbox">
      <property name="geometry">
       <rect>
-       <x>520</x>
+       <x>540</x>
        <y>210</y>
        <width>85</width>
        <height>20</height>
@@ -742,7 +742,7 @@
     <widget class="QCheckBox" name="cake_chkbox">
      <property name="geometry">
       <rect>
-       <x>600</x>
+       <x>640</x>
        <y>210</y>
        <width>85</width>
        <height>20</height>
@@ -755,7 +755,7 @@
     <widget class="QCheckBox" name="chair_chkbox">
      <property name="geometry">
       <rect>
-       <x>700</x>
+       <x>740</x>
        <y>120</y>
        <width>85</width>
        <height>20</height>
@@ -768,7 +768,7 @@
     <widget class="QCheckBox" name="sofa_chkbox">
      <property name="geometry">
       <rect>
-       <x>20</x>
+       <x>0</x>
        <y>240</y>
        <width>85</width>
        <height>20</height>
@@ -778,10 +778,10 @@
       <string>sofa</string>
      </property>
     </widget>
-    <widget class="QCheckBox" name="potted_plant_chkbox">
+    <widget class="QCheckBox" name="pottedplant_chkbox">
      <property name="geometry">
       <rect>
-       <x>110</x>
+       <x>100</x>
        <y>240</y>
        <width>85</width>
        <height>20</height>
@@ -804,11 +804,11 @@
       <string>bed</string>
      </property>
     </widget>
-    <widget class="QCheckBox" name="dining_table_chkbox">
+    <widget class="QCheckBox" name="diningtable_chkbox">
      <property name="geometry">
       <rect>
-       <x>310</x>
-       <y>240</y>
+       <x>950</x>
+       <y>90</y>
        <width>91</width>
        <height>20</height>
       </rect>
@@ -820,8 +820,8 @@
     <widget class="QCheckBox" name="toilet_chkbox">
      <property name="geometry">
       <rect>
-       <x>400</x>
-       <y>240</y>
+       <x>950</x>
+       <y>60</y>
        <width>85</width>
        <height>20</height>
       </rect>
@@ -833,8 +833,8 @@
     <widget class="QCheckBox" name="tvmonitor_chkbox">
      <property name="geometry">
       <rect>
-       <x>520</x>
-       <y>240</y>
+       <x>950</x>
+       <y>30</y>
        <width>85</width>
        <height>20</height>
       </rect>
@@ -846,8 +846,8 @@
     <widget class="QCheckBox" name="laptop_chkbox">
      <property name="geometry">
       <rect>
-       <x>600</x>
-       <y>240</y>
+       <x>1060</x>
+       <y>210</y>
        <width>85</width>
        <height>20</height>
       </rect>
@@ -859,7 +859,7 @@
     <widget class="QCheckBox" name="mouse_chkbox">
      <property name="geometry">
       <rect>
-       <x>800</x>
+       <x>850</x>
        <y>120</y>
        <width>85</width>
        <height>20</height>
@@ -872,8 +872,8 @@
     <widget class="QCheckBox" name="remote_chkbox">
      <property name="geometry">
       <rect>
-       <x>20</x>
-       <y>270</y>
+       <x>1060</x>
+       <y>90</y>
        <width>85</width>
        <height>20</height>
       </rect>
@@ -885,8 +885,8 @@
     <widget class="QCheckBox" name="keyboard_chkbox">
      <property name="geometry">
       <rect>
-       <x>110</x>
-       <y>270</y>
+       <x>1060</x>
+       <y>60</y>
        <width>85</width>
        <height>20</height>
       </rect>
@@ -895,11 +895,11 @@
       <string>keyboard</string>
      </property>
     </widget>
-    <widget class="QCheckBox" name="cellphone_chkbox">
+    <widget class="QCheckBox" name="cell_phone_chkbox">
      <property name="geometry">
       <rect>
-       <x>210</x>
-       <y>270</y>
+       <x>1060</x>
+       <y>30</y>
        <width>85</width>
        <height>20</height>
       </rect>
@@ -911,8 +911,8 @@
     <widget class="QCheckBox" name="microwave_chkbox">
      <property name="geometry">
       <rect>
-       <x>890</x>
-       <y>240</y>
+       <x>1060</x>
+       <y>120</y>
        <width>85</width>
        <height>20</height>
       </rect>
@@ -924,7 +924,7 @@
     <widget class="QCheckBox" name="oven_chkbox">
      <property name="geometry">
       <rect>
-       <x>890</x>
+       <x>950</x>
        <y>210</y>
        <width>85</width>
        <height>20</height>
@@ -937,7 +937,7 @@
     <widget class="QCheckBox" name="toaster_chkbox">
      <property name="geometry">
       <rect>
-       <x>890</x>
+       <x>950</x>
        <y>180</y>
        <width>85</width>
        <height>20</height>
@@ -950,7 +950,7 @@
     <widget class="QCheckBox" name="sink_chkbox">
      <property name="geometry">
       <rect>
-       <x>890</x>
+       <x>950</x>
        <y>150</y>
        <width>85</width>
        <height>20</height>
@@ -963,7 +963,7 @@
     <widget class="QCheckBox" name="refrigerator_chkbox">
      <property name="geometry">
       <rect>
-       <x>700</x>
+       <x>740</x>
        <y>150</y>
        <width>91</width>
        <height>20</height>
@@ -976,8 +976,8 @@
     <widget class="QCheckBox" name="book_chkbox">
      <property name="geometry">
       <rect>
-       <x>800</x>
-       <y>240</y>
+       <x>1060</x>
+       <y>150</y>
        <width>85</width>
        <height>20</height>
       </rect>
@@ -989,8 +989,8 @@
     <widget class="QCheckBox" name="clock_chkbox">
      <property name="geometry">
       <rect>
-       <x>700</x>
-       <y>240</y>
+       <x>1060</x>
+       <y>180</y>
        <width>85</width>
        <height>20</height>
       </rect>
@@ -1002,7 +1002,7 @@
     <widget class="QCheckBox" name="vase_chkbox">
      <property name="geometry">
       <rect>
-       <x>800</x>
+       <x>850</x>
        <y>210</y>
        <width>85</width>
        <height>20</height>
@@ -1015,7 +1015,7 @@
     <widget class="QCheckBox" name="scissors_chkbox">
      <property name="geometry">
       <rect>
-       <x>700</x>
+       <x>740</x>
        <y>210</y>
        <width>85</width>
        <height>20</height>
@@ -1028,7 +1028,7 @@
     <widget class="QCheckBox" name="teddy_bear_chkbox">
      <property name="geometry">
       <rect>
-       <x>800</x>
+       <x>850</x>
        <y>180</y>
        <width>85</width>
        <height>20</height>
@@ -1041,7 +1041,7 @@
     <widget class="QCheckBox" name="hair_drier_chkbox">
      <property name="geometry">
       <rect>
-       <x>700</x>
+       <x>740</x>
        <y>180</y>
        <width>85</width>
        <height>20</height>
@@ -1054,7 +1054,7 @@
     <widget class="QCheckBox" name="toothbrush_chkbox">
      <property name="geometry">
       <rect>
-       <x>800</x>
+       <x>850</x>
        <y>150</y>
        <width>91</width>
        <height>20</height>
@@ -1067,7 +1067,7 @@
     <widget class="QCheckBox" name="sports_ball_chkbox">
      <property name="geometry">
       <rect>
-       <x>890</x>
+       <x>950</x>
        <y>120</y>
        <width>85</width>
        <height>20</height>
@@ -1077,52 +1077,13 @@
       <string>sports ball</string>
      </property>
     </widget>
-    <widget class="QCheckBox" name="pottedplant_chkbox">
-     <property name="geometry">
-      <rect>
-       <x>890</x>
-       <y>90</y>
-       <width>91</width>
-       <height>20</height>
-      </rect>
-     </property>
-     <property name="text">
-      <string>pottedplant</string>
-     </property>
-    </widget>
-    <widget class="QCheckBox" name="diningtable_chkbox">
-     <property name="geometry">
-      <rect>
-       <x>890</x>
-       <y>30</y>
-       <width>91</width>
-       <height>20</height>
-      </rect>
-     </property>
-     <property name="text">
-      <string>diningtable</string>
-     </property>
-    </widget>
-    <widget class="QCheckBox" name="cell_phone_chkbox">
-     <property name="geometry">
-      <rect>
-       <x>890</x>
-       <y>60</y>
-       <width>85</width>
-       <height>20</height>
-      </rect>
-     </property>
-     <property name="text">
-      <string>cell phone</string>
-     </property>
-    </widget>
    </widget>
    <widget class="QGroupBox" name="group_box1">
     <property name="geometry">
      <rect>
       <x>10</x>
-      <y>310</y>
-      <width>981</width>
+      <y>370</y>
+      <width>1171</width>
       <height>91</height>
      </rect>
     </property>
@@ -1140,7 +1101,7 @@
     <widget class="QLabel" name="label">
      <property name="geometry">
       <rect>
-       <x>20</x>
+       <x>10</x>
        <y>30</y>
        <width>41</width>
        <height>21</height>
@@ -1153,7 +1114,7 @@
     <widget class="QLineEdit" name="host_input">
      <property name="geometry">
       <rect>
-       <x>80</x>
+       <x>90</x>
        <y>30</y>
        <width>121</width>
        <height>21</height>
@@ -1166,8 +1127,8 @@
     <widget class="QLabel" name="label_6">
      <property name="geometry">
       <rect>
-       <x>20</x>
-       <y>60</y>
+       <x>800</x>
+       <y>30</y>
        <width>58</width>
        <height>21</height>
       </rect>
@@ -1179,8 +1140,8 @@
     <widget class="QComboBox" name="protocol_cbb">
      <property name="geometry">
       <rect>
-       <x>70</x>
-       <y>60</y>
+       <x>860</x>
+       <y>30</y>
        <width>141</width>
        <height>21</height>
       </rect>
@@ -1197,7 +1158,7 @@
     <widget class="QLabel" name="label_2">
      <property name="geometry">
       <rect>
-       <x>220</x>
+       <x>240</x>
        <y>30</y>
        <width>41</width>
        <height>21</height>
@@ -1210,7 +1171,7 @@
     <widget class="QLineEdit" name="port_input">
      <property name="geometry">
       <rect>
-       <x>300</x>
+       <x>280</x>
        <y>30</y>
        <width>131</width>
        <height>21</height>
@@ -1223,7 +1184,7 @@
     <widget class="QLineEdit" name="stream_path_input">
      <property name="geometry">
       <rect>
-       <x>300</x>
+       <x>90</x>
        <y>60</y>
        <width>131</width>
        <height>21</height>
@@ -1236,7 +1197,7 @@
     <widget class="QLabel" name="label_5">
      <property name="geometry">
       <rect>
-       <x>220</x>
+       <x>10</x>
        <y>60</y>
        <width>81</width>
        <height>21</height>
@@ -1249,7 +1210,7 @@
     <widget class="QLabel" name="label_3">
      <property name="geometry">
       <rect>
-       <x>450</x>
+       <x>430</x>
        <y>30</y>
        <width>41</width>
        <height>21</height>
@@ -1262,7 +1223,7 @@
     <widget class="QLineEdit" name="user_input">
      <property name="geometry">
       <rect>
-       <x>490</x>
+       <x>480</x>
        <y>30</y>
        <width>121</width>
        <height>21</height>
@@ -1304,7 +1265,7 @@
     <widget class="QLabel" name="label_7">
      <property name="geometry">
       <rect>
-       <x>450</x>
+       <x>240</x>
        <y>60</y>
        <width>51</width>
        <height>21</height>
@@ -1317,7 +1278,7 @@
     <widget class="QLineEdit" name="api_input">
      <property name="geometry">
       <rect>
-       <x>490</x>
+       <x>280</x>
        <y>60</y>
        <width>121</width>
        <height>21</height>
@@ -1327,36 +1288,10 @@
       <string>Please enter api</string>
      </property>
     </widget>
-    <widget class="QLineEdit" name="margin_input">
-     <property name="geometry">
-      <rect>
-       <x>840</x>
-       <y>30</y>
-       <width>121</width>
-       <height>21</height>
-      </rect>
-     </property>
-     <property name="placeholderText">
-      <string>Please enter margin</string>
-     </property>
-    </widget>
-    <widget class="QLabel" name="label_8">
-     <property name="geometry">
-      <rect>
-       <x>790</x>
-       <y>30</y>
-       <width>51</width>
-       <height>21</height>
-      </rect>
-     </property>
-     <property name="text">
-      <string>Margin:</string>
-     </property>
-    </widget>
     <widget class="QLineEdit" name="token_input">
      <property name="geometry">
       <rect>
-       <x>660</x>
+       <x>480</x>
        <y>60</y>
        <width>121</width>
        <height>21</height>
@@ -1369,7 +1304,7 @@
     <widget class="QLabel" name="label_9">
      <property name="geometry">
       <rect>
-       <x>620</x>
+       <x>430</x>
        <y>60</y>
        <width>58</width>
        <height>21</height>
@@ -1382,7 +1317,7 @@
     <widget class="QLabel" name="label_10">
      <property name="geometry">
       <rect>
-       <x>790</x>
+       <x>620</x>
        <y>60</y>
        <width>58</width>
        <height>21</height>
@@ -1395,7 +1330,7 @@
     <widget class="QLineEdit" name="etd_input">
      <property name="geometry">
       <rect>
-       <x>842</x>
+       <x>660</x>
        <y>60</y>
        <width>121</width>
        <height>21</height>
@@ -1405,14 +1340,162 @@
       <string>Please enter etd</string>
      </property>
     </widget>
+    <widget class="QLabel" name="label_11">
+     <property name="geometry">
+      <rect>
+       <x>1010</x>
+       <y>30</y>
+       <width>31</width>
+       <height>21</height>
+      </rect>
+     </property>
+     <property name="text">
+      <string>AI:</string>
+     </property>
+    </widget>
+    <widget class="QComboBox" name="ai_cbb">
+     <property name="geometry">
+      <rect>
+       <x>1030</x>
+       <y>20</y>
+       <width>141</width>
+       <height>41</height>
+      </rect>
+     </property>
+     <item>
+      <property name="text">
+       <string>yolov7-tiny</string>
+      </property>
+     </item>
+     <item>
+      <property name="text">
+       <string>yolov7-lite-e</string>
+      </property>
+     </item>
+     <item>
+      <property name="text">
+       <string>yolov7-lite-s</string>
+      </property>
+     </item>
+     <item>
+      <property name="text">
+       <string>yolov7-lite-x</string>
+      </property>
+     </item>
+     <item>
+      <property name="text">
+       <string>yolov7</string>
+      </property>
+     </item>
+     <item>
+      <property name="text">
+       <string>yolov7-w6</string>
+      </property>
+     </item>
+     <item>
+      <property name="text">
+       <string>yolov7-e6</string>
+      </property>
+     </item>
+     <item>
+      <property name="text">
+       <string>yolov7-d6</string>
+      </property>
+     </item>
+     <item>
+      <property name="text">
+       <string>yolov7-e6e</string>
+      </property>
+     </item>
+     <item>
+      <property name="text">
+       <string>yolov7-x</string>
+      </property>
+     </item>
+     <item>
+      <property name="text">
+       <string>yolov8n.pt</string>
+      </property>
+     </item>
+     <item>
+      <property name="text">
+       <string>yolov8s.pt</string>
+      </property>
+     </item>
+     <item>
+      <property name="text">
+       <string>yolov8m.pt</string>
+      </property>
+     </item>
+     <item>
+      <property name="text">
+       <string>yolov8l.pt</string>
+      </property>
+     </item>
+     <item>
+      <property name="text">
+       <string>yolov8x.pt</string>
+      </property>
+     </item>
+     <item>
+      <property name="text">
+       <string>yolov8n-seg.pt</string>
+      </property>
+     </item>
+     <item>
+      <property name="text">
+       <string>yolov8s-seg.pt</string>
+      </property>
+     </item>
+     <item>
+      <property name="text">
+       <string>yolov8m-seg.pt</string>
+      </property>
+     </item>
+     <item>
+      <property name="text">
+       <string>yolov8l-seg.pt</string>
+      </property>
+     </item>
+     <item>
+      <property name="text">
+       <string>yolov8x-seg.pt</string>
+      </property>
+     </item>
+     <item>
+      <property name="text">
+       <string>yolov8n-obb</string>
+      </property>
+     </item>
+     <item>
+      <property name="text">
+       <string>yolov8s-obb</string>
+      </property>
+     </item>
+     <item>
+      <property name="text">
+       <string>yolov8m-obb</string>
+      </property>
+     </item>
+     <item>
+      <property name="text">
+       <string>yolov8l-obb</string>
+      </property>
+     </item>
+     <item>
+      <property name="text">
+       <string>yolov8x-obb</string>
+      </property>
+     </item>
+    </widget>
    </widget>
    <widget class="QGraphicsView" name="graphics_view">
     <property name="geometry">
      <rect>
       <x>10</x>
       <y>10</y>
-      <width>981</width>
-      <height>301</height>
+      <width>1171</width>
+      <height>361</height>
      </rect>
     </property>
     <property name="autoFillBackground">
@@ -1422,8 +1505,8 @@
    <widget class="QPushButton" name="start_btn">
     <property name="geometry">
      <rect>
-      <x>450</x>
-      <y>700</y>
+      <x>570</x>
+      <y>720</y>
       <width>131</width>
       <height>32</height>
      </rect>
@@ -1438,14 +1521,40 @@
     </property>
     <property name="geometry">
      <rect>
-      <x>309</x>
-      <y>700</y>
+      <x>420</x>
+      <y>720</y>
       <width>131</width>
       <height>32</height>
      </rect>
     </property>
     <property name="text">
      <string>Stop</string>
+    </property>
+   </widget>
+   <widget class="QLabel" name="read_label">
+    <property name="geometry">
+     <rect>
+      <x>1060</x>
+      <y>720</y>
+      <width>111</width>
+      <height>31</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string>Read:</string>
+    </property>
+   </widget>
+   <widget class="QLabel" name="yolo_label">
+    <property name="geometry">
+     <rect>
+      <x>940</x>
+      <y>720</y>
+      <width>111</width>
+      <height>31</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string>Yolo:</string>
     </property>
    </widget>
   </widget>

@@ -5,13 +5,16 @@ import cv2
 import numpy as np
 import json
 import requests
+import threading
+import queue
 
+from concurrent.futures import ThreadPoolExecutor
 from ultralytics import YOLO
 from deep_sort_realtime.deepsort_tracker import DeepSort
 from skimage.metrics import mean_squared_error as ssim
-from PySide6.QtWidgets import QApplication, QMainWindow, QPushButton, QLineEdit, QComboBox, QWidget, QGraphicsView, QGraphicsScene, QSizePolicy, QCheckBox
+from PySide6.QtWidgets import QApplication, QMainWindow, QPushButton, QLineEdit, QComboBox, QWidget, QGraphicsView, QGraphicsScene, QSizePolicy, QCheckBox, QLabel
 from PySide6.QtGui import QImage, QPixmap
-from PySide6.QtCore import Qt, QTimer
+from PySide6.QtCore import Qt, QTimer, Signal
 
 # Important:
 # You need to run the following command to generate the ui_form.py file
@@ -25,25 +28,31 @@ else:
     base_path = os.path.dirname(os.path.abspath(__file__))
     
 class MainWindow(QMainWindow):
+    frame_ready = Signal(np.ndarray)
+
     def __init__(self, parent=None):
         super().__init__(parent)
         self.ui = Ui_MainWindow()
         self.ui.setupUi(self)
         self.center_window()
         self.setFixedSize(self.size())
-        self.thresh = 350
-        self.start_frames = 3
+        self.frame_ready.connect(self.update_ui)
         self.activity_count = 0
         self.yolo_count = 0
-        self.confidence = 0.5
+        self.confidence = 0.3
         self.labels = open(os.path.join(base_path, "coco.names")).read().strip().split("\n")
         self.colors = np.random.randint(0, 255, size=(len(self.labels), 3), dtype="uint8")
-        self.model = YOLO(os.path.join(base_path, "yolov8n.pt"))
         self.font_scale = 1
         self.thickness = 1
+        self.old_frame = None
+        self.thresh = 350
 
         # Initialize DeepSORT tracker
-        self.tracker = DeepSort(max_age=30, n_init=3, max_cosine_distance=0.3)
+        self.tracker = DeepSort(max_age=30)
+        self.counted_tracks = {}
+
+        self.ai_cbb = self.findChild(QComboBox, "ai_cbb")
+        self.model = YOLO(os.path.join(base_path, self.ai_cbb.currentText()))
 
         # Initialize UI components
         self.start_btn = self.findChild(QPushButton, "start_btn")
@@ -56,10 +65,11 @@ class MainWindow(QMainWindow):
         self.protocol_cbb = self.findChild(QComboBox, "protocol_cbb")
         self.stream_path_input = self.findChild(QLineEdit, "stream_path_input")
         self.api_input = self.findChild(QLineEdit, "api_input")
-        self.margin_input = self.findChild(QLineEdit, "margin_input")
         self.token_input = self.findChild(QLineEdit, "token_input")
         self.token_input.setEchoMode(QLineEdit.EchoMode.Password)
         self.etd_input = self.findChild(QLineEdit, "etd_input")
+        self.yolo_label = self.findChild(QLabel, "yolo_label")
+        self.read_label = self.findChild(QLabel, "read_label")
         self.checkboxes = []
         for label in self.labels:
             key = label.replace(" ", "_") + "_chkbox"
@@ -74,13 +84,10 @@ class MainWindow(QMainWindow):
         self.stop_btn.clicked.connect(self.stop_stream)
 
         # Timer update
-        self.timer_frame = QTimer()
-        self.timer_frame.timeout.connect(self.update_frame)
         self.timer_api = QTimer()
         self.timer_api.timeout.connect(self.sendApi)
 
         self.cap = None # Initialize camera variable
-        self.old_frame = None # Initialize old frame variable
 
         # Load settings
         self.load_settings()
@@ -100,8 +107,6 @@ class MainWindow(QMainWindow):
             except requests.exceptions.RequestException as e:
                 print(f"API request failed: {e}")
             
-
-
     def start_stream(self):
         """Start stream from RTSP URL"""
         if self.cap:
@@ -113,8 +118,7 @@ class MainWindow(QMainWindow):
         self.password = self.pass_input.text().strip()
         self.protocol = self.protocol_cbb.currentText()
         self.stream_path = self.stream_path_input.text().strip()
-        self.margin = int(self.margin_input.text().strip()) if self.margin_input.text().strip() else 70
-        self.rtsp_url = self.protocol + self.username + ":" + self.password + "@" + self.host + ":" + self.port + "/" + self.stream_path
+        self.rtsp_url = f"{self.protocol}{self.username}:{self.password}@{self.host}:{self.port}/{self.stream_path}"
 
         if not self.host:
             self.graphics_scene.addText("Please enter host!")
@@ -141,13 +145,33 @@ class MainWindow(QMainWindow):
             return
 
         self.cap = cv2.VideoCapture(self.rtsp_url, cv2.CAP_FFMPEG)
-        self.cap.set(cv2.CAP_PROP_BUFFERSIZE, 2)
         if not self.cap.isOpened():
             self.graphics_scene.addText("Not connected to stream!")
             return
+        
+        # Tạo hàng đợi để lưu trữ khung hình
+        self.frame_queue = queue.Queue(maxsize=1000)
+
+        # Hàng đợi để lưu trữ các khung hình cần xử lý
+        self.yolo_queue = queue.Queue(maxsize=1000)
+
+        # ThreadPoolExecutor với 2 worker để xử lý YOLO song song
+        self.executor = ThreadPoolExecutor(max_workers=2)
+
+        # Khởi chạy luồng đọc khung hình
+        self.running = True
+        self.read_thread = threading.Thread(target=self.read_frames, daemon=True)
+        self.read_thread.start()
+
+        # Khởi chạy 2 worker để xử lý YOLO song song
+        for _ in range(2):
+            self.executor.submit(self.process_yolo_worker)
+
+        # Khởi chạy luồng xử lý khung hình
+        self.process_thread = threading.Thread(target=self.process_frames, daemon=True)
+        self.process_thread.start()
 
         # Set up
-        self.timer_frame.start(30)
         self.timer_api.start(int(self.etd_input.text().strip()) if self.etd_input.text().strip() else 1000)
         self.label_counts = { label: 0 for label in self.labels }
         self.start_btn.setText("Start")
@@ -155,91 +179,98 @@ class MainWindow(QMainWindow):
         self.stop_btn.setEnabled(True)
         self.setWindowTitle(self.host)
 
+    def read_frames(self):
+        """Read frames from the camera and put them into the queue"""
+        while self.running and self.cap.isOpened():
+            ret, frame = self.cap.read()
+            if ret and frame is not None:
+                # Đưa khung hình vào hàng đợi (nếu hàng đợi đầy, bỏ qua khung hình)
+                try:
+                    self.frame_queue.put(frame, timeout=1)
+                    self.yolo_label.setText(f"Yolo: {self.yolo_queue.qsize()}")
+                except queue.Full:
+                    pass
+            else:
+                self.retry_connection()
+                break
+
     def stop_stream(self):
         """Stop stream"""
+        self.running = False  # Dừng luồng đọc và xử lý khung hình
+        if hasattr(self, 'read_thread') and self.read_thread.is_alive():
+            self.read_thread.join()  # Chờ luồng đọc kết thúc
+        if hasattr(self, 'process_thread') and self.process_thread.is_alive():
+            self.process_thread.join()  # Chờ luồng xử lý kết thúc
+
+        # Shutdown ThreadPoolExecutor
+        self.executor.shutdown(wait=True)
+
         if self.cap:
             self.cap.release()
             self.cap = None
 
-        self.timer_frame.stop()
         self.timer_api.stop()
         self.graphics_scene.clear()
         self.graphics_scene.addText("Stream stopped!")
         self.start_btn.setEnabled(True)
         self.stop_btn.setEnabled(False)
         self.setWindowTitle("RTSP Stream Viewer")
+        for checkbox in self.checkboxes:
+            checkbox.setText(checkbox.objectName().replace("_chkbox", "").replace("_", " "))
 
-    def update_frame(self):
-        """Update frame from camera"""
-        if self.cap:
-            ret, frame = self.cap.read()
-            if ret:
-                h, w, ch = frame.shape
-                aspect_ratio = w / h
-                if (aspect_ratio > 1.5):
-                    res = (256, 144)
-                else:
-                    res = (200, 200)
-
-                # Resize image, make it grayscale, then blur it
-                self.blank = np.zeros((res[1], res[0]), np.uint8)
-                resized_frame = cv2.resize(frame, res)
-                gray_frame = cv2.cvtColor(resized_frame, cv2.COLOR_BGR2GRAY)
-                final_frame = cv2.GaussianBlur(gray_frame, (5,5), 0)
-
-
-                # Initialize ssim_val with a default value
-                ssim_val = 0
-
-                # Calculate difference between current and previous frame, then get ssim value
-                if self.old_frame is not None:
-                    diff = cv2.absdiff(final_frame, self.old_frame)
-                    result = cv2.threshold(diff, 5, 255, cv2.THRESH_BINARY)[1]
-                    ssim_val = int(ssim(result, self.blank))
-                self.old_frame = final_frame
-
-                # Check if the ssim value is above the threshold
-                if ssim_val > self.thresh:
-                    self.activity_count += 1
-                    if self.activity_count >= self.start_frames:
-                        if self.process_yolo(frame):
-                            self.yolo_count += 1
-                        else:
-                            self.yolo_count = 0
-
-                        if self.yolo_count > 1:
-                            self.activity_count = 0
-                            self.yolo_count = 0
-                else:
-                    self.activity_count = 0
-                    self.yolo_count = 0                
-
-                # Process YOLO detection
-                y_offset = 30
-                for label, count in self.label_counts.items():
-                    if count > 0:
-                        cv2.putText(frame, f"{label} Count: {count}", (10, y_offset), cv2.FONT_HERSHEY_SIMPLEX, fontScale=0.5, color=(0, 255, 0), thickness=2)
-                        y_offset += 20
-
-                # Convert the frame to RGB format
-                frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-                bytes_per_line = ch * w
-                qimg = QImage(frame.data, w, h, bytes_per_line, QImage.Format.Format_RGB888)
-                
-                # Convert QImage to QPixmap
-                pixmap = QPixmap.fromImage(qimg)
-
-                # Remove the previous pixmap and add the new one
-                self.graphics_scene.clear()
-                self.graphics_scene.addPixmap(pixmap)
-
-                # Fit the pixmap into the graphics view without scrollbars
-                self.graphics_view.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
-                self.graphics_view.setVerticalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
-                self.graphics_view.fitInView(self.graphics_scene.sceneRect(), Qt.IgnoreAspectRatio)
+    def process_frame(self, frame):
+        """Process a single frame and update the UI"""
+        try:
+            if frame.shape[1]/frame.shape[0] > 1.55:
+                res = (256,144) # 16:9
             else:
-                self.graphics_scene.addText("Failed to read frame!")
-                self.retry_connection()
+                res = (216,162) # 4:3
+
+            blank = np.zeros((res[1],res[0]), np.uint8)
+            resized_frame = cv2.resize(frame, res)
+            gray_frame = cv2.cvtColor(resized_frame, cv2.COLOR_BGR2GRAY)
+            final_frame = cv2.GaussianBlur(gray_frame, (5,5), 0)
+
+            if self.old_frame is None:
+                self.old_frame = final_frame
+                return
+
+            # Calculate difference between current and previous frame
+            diff = cv2.absdiff(final_frame, self.old_frame)
+            result = cv2.threshold(diff, 5, 255, cv2.THRESH_BINARY)[1]
+            ssim_val = int(ssim(result, blank))
+            self.old_frame = final_frame
+
+            if ssim_val > self.thresh:
+                # Đưa khung hình đã được tăng cường vào queue để YOLO xử lý
+                self.yolo_queue.put(frame, timeout=1)
+            
+            # Hiển thị lên giao diện người dùng
+            self.read_label.setText(f"Read: {self.frame_queue.qsize()}")
+            self.frame_ready.emit(frame)  # Hiển thị khung hình đã được tăng cường
+        except queue.Full:
+            pass
+
+    def update_ui(self, frame):
+        """Update the UI with the processed frame"""
+        h, w, ch = frame.shape
+
+        for label, count in self.label_counts.items():
+            self.checkboxes[self.labels.index(label)].setText(f"({count}){label}")
+
+        # Convert the frame to RGB format
+        frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+        bytes_per_line = ch * w
+        qimg = QImage(frame.data, w, h, bytes_per_line, QImage.Format.Format_RGB888)
+        
+        # Convert QImage to QPixmap
+        pixmap = QPixmap.fromImage(qimg)
+
+        self.graphics_scene.clear()
+        self.graphics_scene.addPixmap(pixmap)
+        self.graphics_view.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
+        self.graphics_view.setVerticalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
+        self.graphics_view.fitInView(self.graphics_scene.sceneRect(), Qt.IgnoreAspectRatio)
 
     def closeEvent(self, event):
         """Close event handler"""
@@ -264,74 +295,159 @@ class MainWindow(QMainWindow):
 
         self.move(center_x, center_y)
 
-    def process_yolo(self, frame):
-        """Process YOLO detection"""
-        results = self.model.predict(frame, conf=self.confidence, verbose=False)[0]
+    def process_frames(self):
+        """Process frames from the queue"""
+        while self.running:
+            try:
+                # Lấy khung hình từ hàng đợi
+                frame = self.frame_queue.get(timeout=1)
+                self.process_frame(frame)
+            except queue.Empty:
+                pass
+            
+    def process_yolo_worker(self):
+        """Worker function to process frames from the YOLO queue in batches"""
+        batch_size = 10
+        batch = []
+        original_frames = []
+
+        while self.running:
+            try:
+                # Lấy khung hình từ hàng đợi
+                frame = self.yolo_queue.get(timeout=1)
+
+                # Xác định vùng trung tâm
+                h, w, _ = frame.shape
+                center_x1 = int(w * 0.35)
+                center_x2 = int(w * 0.65)
+                center_y1 = 0
+                center_y2 = h
+
+                # Cắt vùng trung tâm
+                roi = frame[center_y1:center_y2, center_x1:center_x2]
+                
+                # Thêm vùng trung tâm đã được tăng cường vào batch
+                batch.append(roi)
+                original_frames.append(frame)
+
+                # Nếu đủ batch_size, xử lý YOLO
+                if len(batch) == batch_size:
+                    checkedList = [checkbox.objectName().replace("_chkbox", "").replace("_", " ") for checkbox in self.checkboxes if checkbox.isChecked()]
+                    classes = [self.labels.index(label) for label in checkedList if label in self.labels]
+                    results = self.model.predict(batch, conf=self.confidence, classes=classes, verbose=False)
+
+                    # Xử lý kết quả YOLO
+                    for roi, result, original_frame in zip(batch, results, original_frames):
+                        self.process_yolo_result(original_frame, result, (center_x1, center_y1))
+
+                    batch = []  # Reset batch sau khi xử lý
+                    original_frames = []
+            except queue.Empty:
+                pass
+
+        # Xử lý các khung hình còn lại trong batch khi dừng
+        if batch:
+            results = self.model.predict(batch, conf=self.confidence, verbose=False)
+            for roi, result, original_frame in zip(batch, results, original_frames):
+                self.process_yolo_result(original_frame, result, (center_x1, center_y1))
+
+    def process_yolo_result(self, frame, result, offset):
+        """Process YOLO detection result for a single frame"""
+        offset_x, offset_y = offset  # Tọa độ gốc của vùng trung tâm
+
+        # Tính toán vị trí đường line chính giữa
+        line_center = frame.shape[1] // 2  # Vị trí x của đường line chính giữa
+
+        # Danh sách các đối tượng được chọn trong giao diện
+        checkedList = [checkbox.objectName().replace("_chkbox", "").replace("_", " ") for checkbox in self.checkboxes if checkbox.isChecked()]
+    
+        # Chuyển kết quả YOLO thành định dạng cho DeepSORT
         detections = []
-
-        # Virtual lines (x-coordinates)
-        line_left = self.margin
-        line_right = frame.shape[1] - self.margin
-
-        # Vẽ hai đường ảo
-        cv2.line(frame, (line_left, 0), (line_left, frame.shape[0]), (0, 255, 0), 2)
-        cv2.line(frame, (line_right, 0), (line_right, frame.shape[0]), (0, 255, 0), 2)
-
-        # Loop over the detections
-        for data in results.boxes.data.tolist():
+        for data in result.boxes.data.tolist():
             # Get the bounding box coordinates, confidence, and class id
             xmin, ymin, xmax, ymax, confidence, class_id = data
+
+            # Chuyển đổi tọa độ từ vùng trung tâm sang khung hình gốc
+            xmin += offset_x
+            xmax += offset_x
+            ymin += offset_y
+            ymax += offset_y
 
             # Converting the coordinates and the class id to integers
             xmin, ymin, xmax, ymax = int(xmin), int(ymin), int(xmax), int(ymax)
             class_id = int(class_id)
-
-            # Check if the person crosses the virtual lines
-            checkedList = [checkbox.objectName().replace("_chkbox", "").replace("_", " ") for checkbox in self.checkboxes if checkbox.isChecked()]
-            if self.labels[class_id] in checkedList:
-                detections.append(([xmin, ymin, xmax - xmin, ymax - ymin], confidence, self.labels[class_id]))
-
-            # Draw a bounding box rectangle and label on the image
-            color = [int(c) for c in self.colors[class_id]]
-            cv2.rectangle(frame, (xmin, ymin), (xmax, ymax), color=color, thickness=self.thickness)
-            text = f"{self.labels[class_id]}: {confidence:.2f}"
-
-            # Calculate text width & height to draw the transparent boxes as background of the text
-            (text_width, text_height) = cv2.getTextSize(text, cv2.FONT_HERSHEY_SIMPLEX, fontScale=self.font_scale, thickness=self.thickness)[0]
-            text_offset_x = xmin
-            text_offset_y = ymin - 5
-            box_coords = ((text_offset_x, text_offset_y), (text_offset_x + text_width + 2, text_offset_y - text_height))
-            overlay = frame.copy()
-            cv2.rectangle(overlay, box_coords[0], box_coords[1], color=color, thickness=cv2.FILLED)
-
-            # Add opacity (transparency to the box)
-            frame = cv2.addWeighted(overlay, 0.6, frame, 0.4, 0)
-
-            # Now put the text (label: confidence %)
-            cv2.putText(frame, text, (xmin, ymin - 5), cv2.FONT_HERSHEY_SIMPLEX, fontScale=self.font_scale, color=(0, 0, 0), thickness=self.thickness)
-
+            
+            # Chỉ xử lý các đối tượng đã được chọn
+            class_name = self.labels[class_id]
+            if class_name in checkedList:
+                detections.append(([xmin, ymin, xmax - xmin, ymax - ymin], confidence, class_name))
+        
+        # Cập nhật tracks
         tracks = self.tracker.update_tracks(detections, frame=frame)
-
-        # Loop over tracked objects
+        
+        # Lấy danh sách track_id hiện tại
+        current_track_ids = {track.track_id for track in tracks if track.is_confirmed()}
+        
+        # Cập nhật hoặc thêm thời gian tồn tại cho tracks
+        for track_id in list(self.counted_tracks.keys()):
+            if track_id in current_track_ids:
+                # Reset bộ đếm nếu track vẫn xuất hiện
+                if 'frames_missing' in self.counted_tracks[track_id]:
+                    self.counted_tracks[track_id]['frames_missing'] = 0
+            else:
+                # Tăng bộ đếm nếu track không xuất hiện
+                if 'frames_missing' not in self.counted_tracks[track_id]:
+                    self.counted_tracks[track_id]['frames_missing'] = 1
+                else:
+                    self.counted_tracks[track_id]['frames_missing'] += 1
+                
+                # Chỉ xóa khi track mất đi quá số frame quy định
+                if self.counted_tracks[track_id]['frames_missing'] > 30:  # Giữ track trong 30 frame
+                    del self.counted_tracks[track_id]
+        
+        # Xử lý từng track như hiện tại...
         for track in tracks:
             if not track.is_confirmed():
                 continue
-
+                
+            # Lấy track_id để xác định đối tượng duy nhất
             track_id = track.track_id
-            bbox = track.to_tlbr()
-            x1, y1, x2, y2 = map(int, bbox)
-            center_x = (x1 + x2) // 2
-
-            if line_left - 5 < center_x < line_left + 5:
-                self.label_counts[track.get_det_class()] += 1
-            elif line_right - 5 < center_x < line_right + 5:
-                self.label_counts[track.get_det_class()] += 1
-
-            # Draw bounding box and ID
-            cv2.rectangle(frame, (x1, y1), (x2, y2), (0, 255, 0), 2)
-            cv2.putText(frame, f"ID: {track_id}", (x1, y1 - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 2)
-
-        return len(tracks) > 0
+            
+            # Lấy tọa độ bounding box
+            ltrb = track.to_ltrb()
+            xmin, ymin, xmax, ymax = map(int, ltrb)
+            
+            # Tính tọa độ tâm
+            center_x = (xmin + xmax) // 2
+            
+            # Kiểm tra xem track đã được đếm chưa
+            if track_id not in self.counted_tracks:
+                self.counted_tracks[track_id] = {'counted': False, 'prev_x': center_x}
+            
+            # Kiểm tra đối tượng đi qua line center
+            prev_x = self.counted_tracks[track_id]['prev_x']
+            counted = self.counted_tracks[track_id]['counted']
+            
+            # Kiểm tra hướng di chuyển và đi qua line_center
+            crossed_left_to_right = prev_x < line_center and center_x >= line_center
+            crossed_right_to_left = prev_x > line_center and center_x <= line_center
+            
+            if not counted and (crossed_left_to_right or crossed_right_to_left):
+                # Lấy tên lớp của đối tượng
+                class_name = track.get_det_class()
+                
+                # Tăng biến đếm cho loại đối tượng
+                if class_name in self.label_counts:
+                    self.label_counts[class_name] += 1
+                
+                # Đánh dấu đã đếm
+                self.counted_tracks[track_id]['counted'] = True
+            
+            # Cập nhật vị trí trước đó
+            self.counted_tracks[track_id]['prev_x'] = center_x
+            
+        # Xóa các counted_tracks quá cũ (không xuất hiện trong danh sách tracks hiện tại)
+        self.counted_tracks = {k: v for k, v in self.counted_tracks.items() if k in current_track_ids}
 
     def save_settings(self):
         """Save settings to a JSON file."""
@@ -342,10 +458,10 @@ class MainWindow(QMainWindow):
             "password": self.pass_input.text().strip(),
             "protocol": self.protocol_cbb.currentText(),
             "stream_path": self.stream_path_input.text().strip(),
-            "margin": self.margin_input.text().strip(),
             "api": self.api_input.text().strip(),
             "token": self.token_input.text().strip(),
             "etd": self.etd_input.text().strip(),
+            "ai": self.ai_cbb.currentText(),
             "checked_labels": [checkbox.objectName().replace("_chkbox", "").replace("_", " ") for checkbox in self.checkboxes if checkbox.isChecked()],
         }
 
@@ -365,8 +481,8 @@ class MainWindow(QMainWindow):
             self.pass_input.setText(settings.get("password", ""))
             self.protocol_cbb.setCurrentText(settings.get("protocol", ""))
             self.stream_path_input.setText(settings.get("stream_path", ""))
-            self.margin_input.setText(settings.get("margin", "50"))
             self.api_input.setText(settings.get("api", ""))
+            self.ai_cbb.setCurrentText(settings.get("ai", "yolov8n.pt"))
             self.token_input.setText(settings.get("token", ""))
             checked_labels = settings.get("checked_labels", [])
             self.etd_input.setText(settings.get("etd", "5000"))

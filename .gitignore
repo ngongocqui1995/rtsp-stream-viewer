@@ -1,2 +1,5 @@
 .qtcreator
 settings.json
+yolov*
+__pycache__
+models

@@ -1,5 +1,5 @@
 PySide6>=6.9.0
-opencv-python>=4.7.0.72
+opencv-python>=4.11.0.86
 python-ffmpeg>=2.0.4
 scikit-image>=0.20.0
 sshkeyboard>=2.3.1
