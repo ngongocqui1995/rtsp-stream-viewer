@@ -45,7 +45,7 @@ class MainWindow(QMainWindow):
         # Initialize DeepSORT tracker
         self.tracker = DeepSort(max_age=30)
         self.counted_tracks = {}
-        self.worker_lock = threading.Lock()
+        self.worker_counters = {1: 0, 2: 0}
 
         self.ai_cbb = self.findChild(QComboBox, "ai_cbb")
         self.ai_cbb.currentTextChanged.connect(self.update_model)
@@ -76,6 +76,7 @@ class MainWindow(QMainWindow):
         self.worker_2_label = self.findChild(QLabel, "worker_2_label")
         self.reset_detection_btn = self.findChild(QPushButton, "reset_detection_btn")
         self.reset_detection_btn.clicked.connect(self.reset_detection)
+        self.frame_cbb = self.findChild(QComboBox, "frame_cbb")
         self.checkboxes = []
         for label in self.labels:
             key = label.replace(" ", "_") + "_chkbox"
@@ -188,6 +189,7 @@ class MainWindow(QMainWindow):
         self.pass_input.setEnabled(False)
         self.protocol_cbb.setEnabled(False)
         self.stream_path_input.setEnabled(False)
+        self.reset_detection_btn.setEnabled(False)
         for checkbox in self.checkboxes:
             checkbox.setEnabled(False)
         self.update_model(self.ai_cbb.currentText())
@@ -234,6 +236,7 @@ class MainWindow(QMainWindow):
         self.pass_input.setEnabled(True)
         self.protocol_cbb.setEnabled(True)
         self.stream_path_input.setEnabled(True)
+        self.reset_detection_btn.setEnabled(True)
         for checkbox in self.checkboxes:
             checkbox.setEnabled(True)
             checkbox.setText(checkbox.objectName().replace("_chkbox", "").replace("_", " "))
@@ -278,6 +281,9 @@ class MainWindow(QMainWindow):
 
         for label, count in self.label_counts.items():
             self.checkboxes[self.labels.index(label)].setText(f"({count}){label}")
+
+        self.worker_1_label.setText(f"Worker 1: {self.worker_counters[1]}")
+        self.worker_2_label.setText(f"Worker 2: {self.worker_counters[2]}")
 
         # Convert the frame to RGB format
         frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
@@ -328,20 +334,17 @@ class MainWindow(QMainWindow):
             
     def process_yolo_worker(self, worker_id):
         """Worker function to process frames from the YOLO queue in batches"""
-        batch_size = 10
         batch = []
         original_frames = []
 
         while self.running:
             try:
+                batch_size = int(self.frame_cbb.currentText())
+                
                 # Lấy khung hình từ hàng đợi với timeout
                 frame = self.yolo_queue.get(timeout=1)
 
-                with self.worker_lock:
-                    if worker_id == 1:
-                        self.worker_1_label.setText(f"Worker 1: {len(batch) + 1}")
-                    elif worker_id == 2:
-                        self.worker_2_label.setText(f"Worker 2: {len(batch) + 1}")
+                self.worker_counters[worker_id] = len(batch) + 1
 
                 # Xác định vùng trung tâm
                 h, w, _ = frame.shape
@@ -416,6 +419,8 @@ class MainWindow(QMainWindow):
                         print(f"Error preparing YOLO prediction: {e}")
                         batch = []  # Reset batch khi có lỗi
                         original_frames = []
+
+                self.worker_counters[worker_id] = len(batch) + 1
                         
             except queue.Empty:
                 # Xử lý các khung hình còn lại trong batch nếu đã chờ quá lâu
@@ -450,6 +455,8 @@ class MainWindow(QMainWindow):
                     self.process_yolo_result(original_frame, result, (center_x1, center_y1))
             except Exception as e:
                 print(f"Error processing final batch: {e}")
+        
+        self.worker_counters[worker_id] = len(batch) + 1
 
     def process_yolo_result(self, frame, result, offset):
         """Process YOLO detection result for a single frame"""
@@ -607,6 +614,7 @@ class MainWindow(QMainWindow):
             "checked_labels": [checkbox.objectName().replace("_chkbox", "").replace("_", " ") for checkbox in self.checkboxes if checkbox.isChecked()],
             "label_counts": {label: self.label_counts[label] for label in self.labels if label in self.label_counts},
             "confidence": self.confidence_cbb.currentText(),
+            "frame": self.frame_cbb.currentText()
         }
 
         with open(os.path.join(base_path, "settings.json"), "w") as file:
@@ -630,6 +638,7 @@ class MainWindow(QMainWindow):
             self.token_input.setText(settings.get("token", ""))
             self.etd_input.setText(settings.get("etd", "5000"))
             self.confidence_cbb.setCurrentText(settings.get("confidence", "0.3"))
+            self.frame_cbb.setCurrentText(settings.get("frame", "5"))
             self.label_counts = settings.get("label_counts", {label: 0 for label in self.labels})
             checked_labels = settings.get("checked_labels", [])
             for checkbox in self.checkboxes:
