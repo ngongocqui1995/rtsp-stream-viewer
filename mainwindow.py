@@ -71,6 +71,8 @@ class MainWindow(QMainWindow):
         self.token_input.setEchoMode(QLineEdit.EchoMode.Password)
         self.yolo_label = self.findChild(QLabel, "yolo_label")
         self.read_label = self.findChild(QLabel, "read_label")
+        self.reset_detection_btn = self.findChild(QPushButton, "reset_detection_btn")
+        self.reset_detection_btn.clicked.connect(self.reset_detection)
         self.checkboxes = []
         for label in self.labels:
             key = label.replace(" ", "_") + "_chkbox"
@@ -627,6 +629,11 @@ class MainWindow(QMainWindow):
             print("Settings loaded!")
         except FileNotFoundError:
             print("Settings file not found. Using default values.")
+
+    def reset_detection(self):
+        """Reset detection counts"""
+        self.label_counts = {label: 0 for label in self.labels}
+        print("Detection counts reset!")
 
     def update_confidence(self, confidence):
         """Update confidence when selection changes"""
