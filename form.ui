@@ -1468,16 +1468,6 @@
      </property>
      <item>
       <property name="text">
-       <string>0</string>
-      </property>
-     </item>
-     <item>
-      <property name="text">
-       <string>0.05</string>
-      </property>
-     </item>
-     <item>
-      <property name="text">
        <string>0.1</string>
       </property>
      </item>
