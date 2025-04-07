@@ -37,13 +37,8 @@ class MainWindow(QMainWindow):
         self.center_window()
         self.setFixedSize(self.size())
         self.frame_ready.connect(self.update_ui)
-        self.activity_count = 0
-        self.yolo_count = 0
-        self.confidence = 0.3
         self.labels = open(os.path.join(base_path, "coco.names")).read().strip().split("\n")
         self.colors = np.random.randint(0, 255, size=(len(self.labels), 3), dtype="uint8")
-        self.font_scale = 1
-        self.thickness = 1
         self.old_frame = None
         self.thresh = 350
 
@@ -52,7 +47,14 @@ class MainWindow(QMainWindow):
         self.counted_tracks = {}
 
         self.ai_cbb = self.findChild(QComboBox, "ai_cbb")
-        self.model = YOLO(os.path.join(base_path, self.ai_cbb.currentText()))
+        self.ai_cbb.currentTextChanged.connect(self.update_model)
+
+        self.etd_input = self.findChild(QLineEdit, "etd_input")
+        self.etd_input.textChanged.connect(self.update_etd)
+
+        self.confidence_cbb = self.findChild(QComboBox, "confidence_cbb")
+        self.confidence_cbb.currentTextChanged.connect(self.update_confidence)
+        self.confidence = float(self.confidence_cbb.currentText())
 
         # Initialize UI components
         self.start_btn = self.findChild(QPushButton, "start_btn")
@@ -67,7 +69,6 @@ class MainWindow(QMainWindow):
         self.api_input = self.findChild(QLineEdit, "api_input")
         self.token_input = self.findChild(QLineEdit, "token_input")
         self.token_input.setEchoMode(QLineEdit.EchoMode.Password)
-        self.etd_input = self.findChild(QLineEdit, "etd_input")
         self.yolo_label = self.findChild(QLabel, "yolo_label")
         self.read_label = self.findChild(QLabel, "read_label")
         self.checkboxes = []
@@ -150,10 +151,10 @@ class MainWindow(QMainWindow):
             return
         
         # Tạo hàng đợi để lưu trữ khung hình
-        self.frame_queue = queue.Queue(maxsize=1000)
+        self.frame_queue = queue.Queue(maxsize=500)
 
         # Hàng đợi để lưu trữ các khung hình cần xử lý
-        self.yolo_queue = queue.Queue(maxsize=1000)
+        self.yolo_queue = queue.Queue(maxsize=500)
 
         # ThreadPoolExecutor với 2 worker để xử lý YOLO song song
         self.executor = ThreadPoolExecutor(max_workers=2)
@@ -173,10 +174,16 @@ class MainWindow(QMainWindow):
 
         # Set up
         self.timer_api.start(int(self.etd_input.text().strip()) if self.etd_input.text().strip() else 1000)
-        self.label_counts = { label: 0 for label in self.labels }
         self.start_btn.setText("Start")
         self.start_btn.setEnabled(False)
         self.stop_btn.setEnabled(True)
+        self.host_input.setEnabled(False)
+        self.port_input.setEnabled(False)
+        self.user_input.setEnabled(False)
+        self.pass_input.setEnabled(False)
+        self.protocol_cbb.setEnabled(False)
+        self.stream_path_input.setEnabled(False)
+        self.update_model(self.ai_cbb.currentText())
         self.setWindowTitle(self.host)
 
     def read_frames(self):
@@ -313,7 +320,7 @@ class MainWindow(QMainWindow):
 
         while self.running:
             try:
-                # Lấy khung hình từ hàng đợi
+                # Lấy khung hình từ hàng đợi với timeout
                 frame = self.yolo_queue.get(timeout=1)
 
                 # Xác định vùng trung tâm
@@ -326,30 +333,103 @@ class MainWindow(QMainWindow):
                 # Cắt vùng trung tâm
                 roi = frame[center_y1:center_y2, center_x1:center_x2]
                 
+                # Kiểm tra ROI hợp lệ
+                if roi.size == 0 or roi is None:
+                    continue
+                    
                 # Thêm vùng trung tâm đã được tăng cường vào batch
                 batch.append(roi)
                 original_frames.append(frame)
 
                 # Nếu đủ batch_size, xử lý YOLO
                 if len(batch) == batch_size:
-                    checkedList = [checkbox.objectName().replace("_chkbox", "").replace("_", " ") for checkbox in self.checkboxes if checkbox.isChecked()]
-                    classes = [self.labels.index(label) for label in checkedList if label in self.labels]
-                    results = self.model.predict(batch, conf=self.confidence, classes=classes, verbose=False)
-
-                    # Xử lý kết quả YOLO
-                    for roi, result, original_frame in zip(batch, results, original_frames):
-                        self.process_yolo_result(original_frame, result, (center_x1, center_y1))
-
-                    batch = []  # Reset batch sau khi xử lý
-                    original_frames = []
+                    try:
+                        checkedList = [checkbox.objectName().replace("_chkbox", "").replace("_", " ") 
+                                     for checkbox in self.checkboxes if checkbox.isChecked()]
+                        classes = [self.labels.index(label) for label in checkedList if label in self.labels]
+                        
+                        # Thêm timeout cho predict bằng cách sử dụng một thread riêng
+                        predict_result = [None]
+                        predict_error = [None]
+                        
+                        def predict_with_timeout():
+                            try:
+                                predict_result[0] = self.model.predict(
+                                    batch, conf=self.confidence, classes=classes, verbose=False)
+                            except Exception as e:
+                                predict_error[0] = e
+                        
+                        predict_thread = threading.Thread(target=predict_with_timeout)
+                        predict_thread.daemon = True
+                        predict_thread.start()
+                        
+                        # Chờ tối đa batch_size giây
+                        predict_thread.join(batch_size)
+                        
+                        if predict_thread.is_alive():
+                            # Nếu thread vẫn đang chạy sau batch_size giây, coi như bị timeout
+                            print("YOLO prediction timeout, skipping batch")
+                            batch = []
+                            original_frames = []
+                            continue
+                        
+                        if predict_error[0] is not None:
+                            # Có lỗi xảy ra
+                            print(f"Error in YOLO prediction: {predict_error[0]}")
+                            batch = []
+                            original_frames = []
+                            continue
+                            
+                        results = predict_result[0]
+                        
+                        # Xử lý kết quả YOLO
+                        for roi, result, original_frame in zip(batch, results, original_frames):
+                            try:
+                                self.process_yolo_result(original_frame, result, (center_x1, center_y1))
+                            except Exception as e:
+                                print(f"Error processing YOLO result: {e}")
+                                
+                        batch = []  # Reset batch sau khi xử lý
+                        original_frames = []
+                        
+                    except Exception as e:
+                        print(f"Error preparing YOLO prediction: {e}")
+                        batch = []  # Reset batch khi có lỗi
+                        original_frames = []
+                        
             except queue.Empty:
+                # Xử lý các khung hình còn lại trong batch nếu đã chờ quá lâu
+                if batch and len(batch) >= 3:  # Xử lý nếu có ít nhất 3 frame trong batch
+                    try:
+                        checkedList = [checkbox.objectName().replace("_chkbox", "").replace("_", " ") 
+                                    for checkbox in self.checkboxes if checkbox.isChecked()]
+                        classes = [self.labels.index(label) for label in checkedList if label in self.labels]
+                        results = self.model.predict(batch, conf=self.confidence, classes=classes, verbose=False)
+                    
+                        # Xử lý kết quả YOLO
+                        for roi, result, original_frame in zip(batch, results, original_frames):
+                            self.process_yolo_result(original_frame, result, (center_x1, center_y1))
+                            
+                    except Exception as e:
+                        print(f"Error processing remaining batch: {e}")
+                    
+                    batch = []  # Reset batch
+                    original_frames = []
                 pass
+            except Exception as e:
+                print(f"Unexpected error in YOLO worker: {e}")
+                # Reset batch khi có lỗi không xác định
+                batch = []
+                original_frames = []
 
         # Xử lý các khung hình còn lại trong batch khi dừng
         if batch:
-            results = self.model.predict(batch, conf=self.confidence, verbose=False)
-            for roi, result, original_frame in zip(batch, results, original_frames):
-                self.process_yolo_result(original_frame, result, (center_x1, center_y1))
+            try:
+                results = self.model.predict(batch, conf=self.confidence, verbose=False)
+                for roi, result, original_frame in zip(batch, results, original_frames):
+                    self.process_yolo_result(original_frame, result, (center_x1, center_y1))
+            except Exception as e:
+                print(f"Error processing final batch: {e}")
 
     def process_yolo_result(self, frame, result, offset):
         """Process YOLO detection result for a single frame"""
@@ -359,29 +439,71 @@ class MainWindow(QMainWindow):
         line_center = frame.shape[1] // 2  # Vị trí x của đường line chính giữa
 
         # Danh sách các đối tượng được chọn trong giao diện
-        checkedList = [checkbox.objectName().replace("_chkbox", "").replace("_", " ") for checkbox in self.checkboxes if checkbox.isChecked()]
-    
+        checkedList = [checkbox.objectName().replace("_chkbox", "").replace("_", " ") 
+                      for checkbox in self.checkboxes if checkbox.isChecked()]
+        
         # Chuyển kết quả YOLO thành định dạng cho DeepSORT
         detections = []
-        for data in result.boxes.data.tolist():
-            # Get the bounding box coordinates, confidence, and class id
-            xmin, ymin, xmax, ymax, confidence, class_id = data
-
-            # Chuyển đổi tọa độ từ vùng trung tâm sang khung hình gốc
-            xmin += offset_x
-            xmax += offset_x
-            ymin += offset_y
-            ymax += offset_y
-
-            # Converting the coordinates and the class id to integers
-            xmin, ymin, xmax, ymax = int(xmin), int(ymin), int(xmax), int(ymax)
-            class_id = int(class_id)
-            
-            # Chỉ xử lý các đối tượng đã được chọn
-            class_name = self.labels[class_id]
-            if class_name in checkedList:
-                detections.append(([xmin, ymin, xmax - xmin, ymax - ymin], confidence, class_name))
         
+        # Kiểm tra xem kết quả có hợp lệ không
+        if result is None:
+            return
+        
+        # Kiểm tra xem đây có phải mô hình OBB không
+        is_obb_model = "obb" in self.ai_cbb.currentText()
+        
+        try:
+            if is_obb_model:
+                # Xử lý kết quả từ mô hình OBB
+                if hasattr(result, 'obb') and result.obb is not None and hasattr(result.obb, 'data'):
+                    for data in result.obb.data.tolist():
+                        # OBB format: [cx, cy, w, h, angle, conf, cls]
+                        if len(data) >= 7:
+                            cx, cy, w, h, angle, confidence, class_id = data[:7]
+                            class_id = int(class_id)
+                            
+                            # Chuyển đổi tọa độ tâm thành góc trên bên trái để tương thích với DeepSORT
+                            xmin = int(cx - w/2) + offset_x
+                            ymin = int(cy - h/2) + offset_y
+                            width = int(w)
+                            height = int(h)
+                            
+                            # Chỉ xử lý các đối tượng đã được chọn
+                            if class_id < len(self.labels):
+                                class_name = self.labels[class_id]
+                                if class_name in checkedList:
+                                    detections.append(([xmin, ymin, width, height], confidence, class_name))
+            else:
+                # Xử lý kết quả từ mô hình YOLOv8 tiêu chuẩn
+                if hasattr(result, 'boxes') and result.boxes is not None and hasattr(result.boxes, 'data'):
+                    for data in result.boxes.data.tolist():
+                        # Get the bounding box coordinates, confidence, and class id
+                        xmin, ymin, xmax, ymax, confidence, class_id = data
+                        
+                        # Chuyển đổi tọa độ từ vùng trung tâm sang khung hình gốc
+                        xmin += offset_x
+                        xmax += offset_x
+                        ymin += offset_y
+                        ymax += offset_y
+                        
+                        # Converting the coordinates and the class id to integers
+                        xmin, ymin, xmax, ymax = int(xmin), int(ymin), int(xmax), int(ymax)
+                        class_id = int(class_id)
+                        
+                        # Chỉ xử lý các đối tượng đã được chọn
+                        if class_id < len(self.labels):
+                            class_name = self.labels[class_id]
+                            if class_name in checkedList:
+                                detections.append(([xmin, ymin, xmax - xmin, ymax - ymin], confidence, class_name))
+                                
+        except Exception as e:
+            print(f"Error parsing YOLO results: {e}")
+            return
+            
+        # Nếu không có detections, không cần xử lý thêm
+        if not detections:
+            return
+            
         # Cập nhật tracks
         tracks = self.tracker.update_tracks(detections, frame=frame)
         
@@ -463,6 +585,8 @@ class MainWindow(QMainWindow):
             "etd": self.etd_input.text().strip(),
             "ai": self.ai_cbb.currentText(),
             "checked_labels": [checkbox.objectName().replace("_chkbox", "").replace("_", " ") for checkbox in self.checkboxes if checkbox.isChecked()],
+            "label_counts": {label: self.label_counts[label] for label in self.labels if label in self.label_counts},
+            "confidence": self.confidence_cbb.currentText(),
         }
 
         with open(os.path.join(base_path, "settings.json"), "w") as file:
@@ -484,14 +608,31 @@ class MainWindow(QMainWindow):
             self.api_input.setText(settings.get("api", ""))
             self.ai_cbb.setCurrentText(settings.get("ai", "yolov8n.pt"))
             self.token_input.setText(settings.get("token", ""))
-            checked_labels = settings.get("checked_labels", [])
             self.etd_input.setText(settings.get("etd", "5000"))
+            self.confidence_cbb.setCurrentText(settings.get("confidence", "0.3"))
+            self.label_counts = settings.get("label_counts", {label: 0 for label in self.labels})
+            checked_labels = settings.get("checked_labels", [])
             for checkbox in self.checkboxes:
                 label = checkbox.objectName().replace("_chkbox", "").replace("_", " ")
                 checkbox.setChecked(label in checked_labels)
             print("Settings loaded!")
         except FileNotFoundError:
             print("Settings file not found. Using default values.")
+
+    def update_confidence(self, confidence):
+        """Update confidence when selection changes"""
+        self.confidence = float(confidence)
+        print(f"Confidence changed to {confidence}")
+
+    def update_etd(self, etd):
+        """Update ETD when input changes"""
+        self.timer_api.setInterval(int(etd) if etd else 1000)
+        print(f"ETD changed to {etd}")
+
+    def update_model(self, model_name):
+        """Update model when selection changes"""
+        self.model = YOLO(model_name)
+        print(f"Model changed to {model_name}")
 
 if __name__ == "__main__":
     app = QApplication(sys.argv)
