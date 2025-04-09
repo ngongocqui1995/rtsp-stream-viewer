@@ -403,7 +403,7 @@ class Ui_MainWindow(object):
         self.frame_cbb.setGeometry(QRect(1030, 50, 141, 41))
         self.graphics_view = QGraphicsView(self.centralwidget)
         self.graphics_view.setObjectName(u"graphics_view")
-        self.graphics_view.setGeometry(QRect(10, 10, 1171, 361))
+        self.graphics_view.setGeometry(QRect(10, 10, 1171, 61))
         self.graphics_view.setAutoFillBackground(True)
         self.start_btn = QPushButton(self.centralwidget)
         self.start_btn.setObjectName(u"start_btn")
@@ -424,6 +424,9 @@ class Ui_MainWindow(object):
         self.worker_2_label = QLabel(self.centralwidget)
         self.worker_2_label.setObjectName(u"worker_2_label")
         self.worker_2_label.setGeometry(QRect(117, 725, 111, 21))
+        self.video_label = QLabel(self.centralwidget)
+        self.video_label.setObjectName(u"video_label")
+        self.video_label.setGeometry(QRect(20, 90, 1151, 281))
         MainWindow.setCentralWidget(self.centralwidget)
         self.statusbar = QStatusBar(MainWindow)
         self.statusbar.setObjectName(u"statusbar")
@@ -596,5 +599,6 @@ class Ui_MainWindow(object):
         self.yolo_label.setText(QCoreApplication.translate("MainWindow", u"Yolo:", None))
         self.worker_1_label.setText(QCoreApplication.translate("MainWindow", u"Worker 1: 0", None))
         self.worker_2_label.setText(QCoreApplication.translate("MainWindow", u"Worker 2: 0", None))
+        self.video_label.setText(QCoreApplication.translate("MainWindow", u"TextLabel", None))
     # retranslateUi
 

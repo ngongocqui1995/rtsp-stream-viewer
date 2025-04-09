@@ -42,6 +42,16 @@ class MainWindow(QMainWindow):
         self.old_frame = None
         self.thresh = 350
 
+        # Định nghĩa đường chéo cho đếm đối tượng
+        self.line_start = None  # Sẽ được cập nhật khi có frame đầu tiên
+        self.line_end = None    # Sẽ được cập nhật khi có frame đầu tiên
+        
+        # Định nghĩa tỷ lệ để tính toán đường chéo
+        self.line_start_x_offset = 400  # offset từ giữa màn hình
+        self.line_start_y = 0           # y của điểm bắt đầu
+        self.line_end_x = 0             # x của điểm kết thúc
+        self.line_end_y_offset = 200    # offset từ đáy màn hình
+
         # Initialize DeepSORT tracker
         self.tracker = DeepSort(max_age=30)
         self.counted_tracks = {}
@@ -125,7 +135,11 @@ class MainWindow(QMainWindow):
         self.password = self.pass_input.text().strip()
         self.protocol = self.protocol_cbb.currentText()
         self.stream_path = self.stream_path_input.text().strip()
-        self.rtsp_url = f"{self.protocol}{self.username}:{self.password}@{self.host}:{self.port}/{self.stream_path}"
+
+        if self.username and self.password:
+            self.rtsp_url = f"{self.protocol}{self.username}:{self.password}@{self.host}:{self.port}/{self.stream_path}"
+        else:
+            self.rtsp_url = f"{self.protocol}{self.host}:{self.port}/{self.stream_path}"
 
         if not self.host:
             self.graphics_scene.addText("Please enter host!")
@@ -133,14 +147,6 @@ class MainWindow(QMainWindow):
 
         if not self.port:
             self.graphics_scene.addText("Please enter port!")
-            return
-        
-        if not self.username:
-            self.graphics_scene.addText("Please enter username!")
-            return
-        
-        if not self.password:
-            self.graphics_scene.addText("Please enter password!")
             return
         
         if not self.stream_path:
@@ -245,29 +251,29 @@ class MainWindow(QMainWindow):
     def process_frame(self, frame):
         """Process a single frame and update the UI"""
         try:
-            if frame.shape[1]/frame.shape[0] > 1.55:
-                res = (256,144) # 16:9
-            else:
-                res = (216,162) # 4:3
+            # if frame.shape[1]/frame.shape[0] > 1.55:
+            #     res = (256,144) # 16:9
+            # else:
+            #     res = (216,162) # 4:3
 
-            blank = np.zeros((res[1],res[0]), np.uint8)
-            resized_frame = cv2.resize(frame, res)
-            gray_frame = cv2.cvtColor(resized_frame, cv2.COLOR_BGR2GRAY)
-            final_frame = cv2.GaussianBlur(gray_frame, (5,5), 0)
+            # blank = np.zeros((res[1],res[0]), np.uint8)
+            # resized_frame = cv2.resize(frame, res)
+            # gray_frame = cv2.cvtColor(resized_frame, cv2.COLOR_BGR2GRAY)
+            # final_frame = cv2.GaussianBlur(gray_frame, (5,5), 0)
 
-            if self.old_frame is None:
-                self.old_frame = final_frame
-                return
+            # if self.old_frame is None:
+            #     self.old_frame = final_frame
+            #     return
 
-            # Calculate difference between current and previous frame
-            diff = cv2.absdiff(final_frame, self.old_frame)
-            result = cv2.threshold(diff, 5, 255, cv2.THRESH_BINARY)[1]
-            ssim_val = int(ssim(result, blank))
-            self.old_frame = final_frame
+            # # Calculate difference between current and previous frame
+            # diff = cv2.absdiff(final_frame, self.old_frame)
+            # result = cv2.threshold(diff, 5, 255, cv2.THRESH_BINARY)[1]
+            # ssim_val = int(ssim(result, blank))
+            # self.old_frame = final_frame
 
-            if ssim_val > self.thresh:
-                # Đưa khung hình đã được tăng cường vào queue để YOLO xử lý
-                self.yolo_queue.put(frame, timeout=1)
+            # if ssim_val > self.thresh:
+            #     # Đưa khung hình đã được tăng cường vào queue để YOLO xử lý
+            #     self.yolo_queue.put(frame, timeout=1)
             
             # Hiển thị lên giao diện người dùng
             self.read_label.setText(f"Read: {self.frame_queue.qsize()}")
@@ -278,6 +284,17 @@ class MainWindow(QMainWindow):
     def update_ui(self, frame):
         """Update the UI with the processed frame"""
         h, w, ch = frame.shape
+        
+        # Cập nhật tọa độ đường chéo theo kích thước frame
+        self.line_start = (w // 2 + self.line_start_x_offset, self.line_start_y)
+        self.line_end = (self.line_end_x, h - self.line_end_y_offset)
+        
+        # Vẽ đường chéo để dễ quan sát
+        cv2.line(frame, self.line_start, self.line_end, (0, 255, 0), 2)
+
+        # # Vẽ hình chữ nhật ROI lên frame để debug (chỉ để kiểm tra)
+        # if self.min_x and self.min_y and self.max_x and self.max_y:
+        #     cv2.rectangle(frame, (self.min_x, self.min_y), (self.max_x, self.max_y), (0, 0, 255), 2)
 
         for label, count in self.label_counts.items():
             self.checkboxes[self.labels.index(label)].setText(f"({count}){label}")
@@ -346,25 +363,38 @@ class MainWindow(QMainWindow):
 
                 self.worker_counters[worker_id] = len(batch) + 1
 
-                # Xác định vùng trung tâm
+                # Lấy kích thước frame
                 h, w, _ = frame.shape
-                center_x1 = int(w * 0.35)
-                center_x2 = int(w * 0.65)
-                center_y1 = 0
-                center_y2 = h
-
-                # Cắt vùng trung tâm
-                roi = frame[center_y1:center_y2, center_x1:center_x2]
+                
+                # Cập nhật tọa độ đường chéo
+                self.line_start = (w // 2 + self.line_start_x_offset, self.line_start_y)
+                self.line_end = (self.line_end_x, h - self.line_end_y_offset)
+                
+                # Tính toán vùng 30% xung quanh đường chéo
+                margin = int(w * 0.15)  # 15% mỗi bên của đường chéo, tổng 30%
+                
+                # Tạo vùng hình chữ nhật bao quanh đường chéo
+                min_x = max(0, min(self.line_start[0], self.line_end[0]) - margin)
+                max_x = min(w, max(self.line_start[0], self.line_end[0]) + margin)
+                min_y = max(0, min(self.line_start[1], self.line_end[1]) - margin)
+                max_y = min(h, max(self.line_start[1], self.line_end[1]) + margin)
+                self.min_x = min_x
+                self.min_y = min_y
+                self.max_x = max_x
+                self.max_y = max_y
+                
+                # Cắt vùng trung tâm theo đường chéo
+                roi = frame[min_y:max_y, min_x:max_x]
                 
                 # Kiểm tra ROI hợp lệ
                 if roi.size == 0 or roi is None:
                     continue
                     
-                # Thêm vùng trung tâm đã được tăng cường vào batch
+                # Thêm vùng trung tâm vào batch
                 batch.append(roi)
                 original_frames.append(frame)
 
-                # Nếu đủ batch_size, xử lý YOLO
+                # Phần code còn lại giữ nguyên...
                 if len(batch) == batch_size:
                     try:
                         checkedList = [checkbox.objectName().replace("_chkbox", "").replace("_", " ") 
@@ -408,7 +438,7 @@ class MainWindow(QMainWindow):
                         # Xử lý kết quả YOLO
                         for roi, result, original_frame in zip(batch, results, original_frames):
                             try:
-                                self.process_yolo_result(original_frame, result, (center_x1, center_y1))
+                                self.process_yolo_result(original_frame, result, (min_x, min_y))
                             except Exception as e:
                                 print(f"Error processing YOLO result: {e}")
                                 
@@ -433,7 +463,7 @@ class MainWindow(QMainWindow):
                     
                         # Xử lý kết quả YOLO
                         for roi, result, original_frame in zip(batch, results, original_frames):
-                            self.process_yolo_result(original_frame, result, (center_x1, center_y1))
+                            self.process_yolo_result(original_frame, result, (min_x, min_y))
                             
                     except Exception as e:
                         print(f"Error processing remaining batch: {e}")
@@ -452,7 +482,7 @@ class MainWindow(QMainWindow):
             try:
                 results = self.model.predict(batch, conf=self.confidence, verbose=False)
                 for roi, result, original_frame in zip(batch, results, original_frames):
-                    self.process_yolo_result(original_frame, result, (center_x1, center_y1))
+                    self.process_yolo_result(original_frame, result, (min_x, min_y))
             except Exception as e:
                 print(f"Error processing final batch: {e}")
         
@@ -462,21 +492,22 @@ class MainWindow(QMainWindow):
         """Process YOLO detection result for a single frame"""
         offset_x, offset_y = offset  # Tọa độ gốc của vùng trung tâm
 
-        # Tính toán vị trí đường line chính giữa
-        line_center = frame.shape[1] // 2  # Vị trí x của đường line chính giữa
-
-        # Danh sách các đối tượng được chọn trong giao diện
+        # Lấy kích thước frame
+        h, w = frame.shape[:2]
+        
+        # Cập nhật tọa độ đường chéo
+        self.line_start = (w // 2 + self.line_start_x_offset, self.line_start_y)
+        self.line_end = (self.line_end_x, h - self.line_end_y_offset)
+        
+        # Phần còn lại giữ nguyên cho đến phần xử lý track
         checkedList = [checkbox.objectName().replace("_chkbox", "").replace("_", " ") 
                       for checkbox in self.checkboxes if checkbox.isChecked()]
         
-        # Chuyển kết quả YOLO thành định dạng cho DeepSORT
         detections = []
         
-        # Kiểm tra xem kết quả có hợp lệ không
         if result is None:
             return
         
-        # Kiểm tra xem đây có phải mô hình OBB không
         is_obb_model = "obb" in self.ai_cbb.currentText()
         
         try:
@@ -551,10 +582,10 @@ class MainWindow(QMainWindow):
                     self.counted_tracks[track_id]['frames_missing'] += 1
                 
                 # Chỉ xóa khi track mất đi quá số frame quy định
-                if self.counted_tracks[track_id]['frames_missing'] > 30:  # Giữ track trong 30 frame
+                if self.counted_tracks[track_id]['frames_missing'] > 200:  # Giữ track trong 30 frame
                     del self.counted_tracks[track_id]
         
-        # Xử lý từng track như hiện tại...
+        # Xử lý từng track
         for track in tracks:
             if not track.is_confirmed():
                 continue
@@ -566,22 +597,32 @@ class MainWindow(QMainWindow):
             ltrb = track.to_ltrb()
             xmin, ymin, xmax, ymax = map(int, ltrb)
             
-            # Tính tọa độ tâm
+            # Tính tọa độ tâm (cần cả x và y)
             center_x = (xmin + xmax) // 2
+            center_y = (ymin + ymax) // 2
             
             # Kiểm tra xem track đã được đếm chưa
             if track_id not in self.counted_tracks:
-                self.counted_tracks[track_id] = {'counted': False, 'prev_x': center_x}
+                self.counted_tracks[track_id] = {'counted': False, 'prev_x': center_x, 'prev_y': center_y}
             
-            # Kiểm tra đối tượng đi qua line center
+            # Lấy vị trí trước đó
             prev_x = self.counted_tracks[track_id]['prev_x']
+            prev_y = self.counted_tracks[track_id]['prev_y']
             counted = self.counted_tracks[track_id]['counted']
             
-            # Kiểm tra hướng di chuyển và đi qua line_center
-            crossed_left_to_right = prev_x < line_center and center_x >= line_center
-            crossed_right_to_left = prev_x > line_center and center_x <= line_center
+            # Hàm kiểm tra điểm có nằm bên trái đường chéo không
+            def is_on_left_side(x, y):
+                """Kiểm tra điểm (x,y) có nằm bên trái đường thẳng không"""
+                x1, y1 = self.line_start
+                x2, y2 = self.line_end
+                return (x2 - x1) * (y - y1) - (y2 - y1) * (x - x1) < 0
             
-            if not counted and (crossed_left_to_right or crossed_right_to_left):
+            # Xác định vị trí trước và hiện tại so với đường chéo
+            was_on_left = is_on_left_side(prev_x, prev_y)
+            now_on_left = is_on_left_side(center_x, center_y)
+            
+            # Nếu vị trí trước và hiện tại khác nhau, tức là đã vượt qua đường chéo
+            if not counted and was_on_left != now_on_left:
                 # Lấy tên lớp của đối tượng
                 class_name = track.get_det_class()
                 
@@ -594,8 +635,9 @@ class MainWindow(QMainWindow):
             
             # Cập nhật vị trí trước đó
             self.counted_tracks[track_id]['prev_x'] = center_x
+            self.counted_tracks[track_id]['prev_y'] = center_y
             
-        # Xóa các counted_tracks quá cũ (không xuất hiện trong danh sách tracks hiện tại)
+        # Xóa các counted_tracks quá cũ
         self.counted_tracks = {k: v for k, v in self.counted_tracks.items() if k in current_track_ids}
 
     def save_settings(self):
@@ -651,6 +693,8 @@ class MainWindow(QMainWindow):
     def reset_detection(self):
         """Reset detection counts"""
         self.label_counts = {label: 0 for label in self.labels}
+        for checkbox in self.checkboxes:
+            checkbox.setText(checkbox.objectName().replace("_chkbox", "").replace("_", " "))
         print("Detection counts reset!")
 
     def update_confidence(self, confidence):
@@ -666,6 +710,7 @@ class MainWindow(QMainWindow):
     def update_model(self, model_name):
         """Update model when selection changes"""
         self.model = YOLO(model_name)
+        # self.model = YOLO("yolov8x-bike-motorcycle.pt")
         print(f"Model changed to {model_name}")
 
 if __name__ == "__main__":
