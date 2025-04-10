@@ -6,9 +6,9 @@ from tqdm import tqdm
 import shutil
 
 # Thư mục chứa dữ liệu đã lọc
-INPUT_DIR = "/Users/quingo/Documents/Qt/camera/IDD_Segmentation_motorcycle"
+INPUT_DIR = "IDD_Segmentation_custom"
 # Thư mục đầu ra cho định dạng YOLO
-OUTPUT_DIR = "/Users/quingo/Documents/Qt/camera/motorcycle_yolo_dataset"
+OUTPUT_DIR = "custom_yolo_dataset"
 
 # Tạo cấu trúc thư mục YOLO
 os.makedirs(os.path.join(OUTPUT_DIR, "train", "images"), exist_ok=True)

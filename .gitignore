@@ -3,3 +3,5 @@ settings.json
 yolo*
 __pycache__
 models
+IDD_*
+custom*

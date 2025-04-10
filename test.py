@@ -7,10 +7,10 @@ import hashlib
 from tqdm import tqdm
 
 # Thư mục chứa dữ liệu
-BASE_DIR = "/Users/quingo/Documents/Qt/camera/IDD_Segmentation"
+BASE_DIR = "IDD_Segmentation"
 GTFINE_DIR = os.path.join(BASE_DIR, "gtFine")
 LEFTIMG_DIR = os.path.join(BASE_DIR, "leftImg8bit")  # Thêm đường dẫn tới thư mục ảnh
-OUTPUT_DIR = "/Users/quingo/Documents/Qt/camera/IDD_Segmentation_motorcycle"
+OUTPUT_DIR = "IDD_Segmentation_custom"
 
 # Các lớp cần trích xuất
 TARGET_CLASSES = ["motorcycle", "bicycle"]
