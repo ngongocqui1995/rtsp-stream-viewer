@@ -1,5 +1,6 @@
 import time
 import av
+from av.error import InvalidDataError
 
 from threading import Thread, Event
 
@@ -89,7 +90,7 @@ class RTSPReader:
                     self.frame = img
             
             # Cập nhật các loại exception cần bắt
-            except (StopIteration, EOFError, ConnectionError, OSError) as e:
+            except (InvalidDataError, StopIteration, EOFError, ConnectionError, OSError) as e:
                 print(f"Error reading frame: {e}")
                 self.connected = False
                 # Try to reconnect

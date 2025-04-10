@@ -1,3 +1,4 @@
+import os
 import numpy as np
 import cv2
 import time
@@ -7,65 +8,96 @@ from core.rtsp import RTSPReader
 from skimage.metrics import mean_squared_error as ssim
 from ultralytics import YOLO
 
-model = YOLO("yolov8x.pt")
-CONFIDENCE = 0.5
+if getattr(sys, 'frozen', False):  # Kiểm tra nếu đang chạy từ file .exe
+    base_path = sys._MEIPASS
+else:
+    base_path = os.path.dirname(os.path.abspath(__file__))
+
+# Tải model YOLO
+model = YOLO("yolov8n.pt")
+CONFIDENCE = 0.25
 blank = None
 old_frame = None
-thresh = 500
+activity_count = 0
+start_frames = 3
+thresh = 350
+yolo_count = 0
+labels = open(os.path.join(base_path, "coco.names")).read().strip().split("\n")
+
+# Dictionary để theo dõi hướng di chuyển
+track_memory = {}
 
 def process_yolo(frame):
-    # Khai báo sử dụng biến toàn cục
+    """Phát hiện và theo dõi đối tượng trong frame bằng YOLOv8 với ByteTrack tích hợp"""
     global CONFIDENCE
 
-    print("Processing YOLO...")
-    results = model.predict(frame, conf=CONFIDENCE, classes=(1, 3), verbose=False)[0]
-    object_found = False
+    # Sử dụng track() thay cho predict() với ByteTrack tích hợp sẵn
+    results = model.track(frame, conf=CONFIDENCE, classes=[1, 3], verbose=False, persist=True, tracker="botsort.yaml")[0]
+    
+    if len(results) == 0 or results.boxes is None:
+        return False
 
-    # Loop over the detections
-    for data in results.boxes.data.tolist():
-        # Get the bounding box coordinates, confidence, and class id
-        xmin, ymin, xmax, ymax, confidence, class_id = data
+    # Theo dõi đối tượng
+    boxes = results.boxes
+    object_found = len(boxes) > 0
 
-        # Converting the coordinates and the class id to integers
-        xmin = int(xmin)
-        ymin = int(ymin)
-        xmax = int(xmax)
-        ymax = int(ymax)
-        class_id = int(class_id)
+    # Xử lý các đối tượng được theo dõi
+    for box in boxes:
+        # Chỉ xử lý các box có track ID
+        if box.id is None:
+            continue
+            
+        # Lấy ID và class
+        track_id = int(box.id.item())
+        class_id = int(box.cls.item())
+        
+        # print(f"Class ID: {class_id}")
+        
+        # Lấy tọa độ bounding box
+        bbox = box.xyxy[0].cpu().numpy()  # [x1, y1, x2, y2]
+        
+        # Tính tọa độ trung tâm
+        centroid = ((bbox[0] + bbox[2]) / 2, (bbox[1] + bbox[3]) / 2)
+        
+        # Khởi tạo track nếu chưa có trong memory
+        if track_id not in track_memory:
+            track_memory[track_id] = {
+                'previous_centroid': centroid,
+                'previous_direction': None
+            }
+            continue
+            
+        # Lấy thông tin trước đó
+        prev_centroid = track_memory[track_id]['previous_centroid']
+        
+        # Tính vector chuyển động
+        dx = centroid[0] - prev_centroid[0]
+        dy = centroid[1] - prev_centroid[1]
+        
+        # Xác định hướng di chuyển với ngưỡng
+        MIN_MOVEMENT = 5  # pixels
+        if abs(dy) < MIN_MOVEMENT:
+            # Nếu di chuyển ít, giữ hướng trước đó
+            direction = track_memory[track_id]['previous_direction']
+            if direction is None:  # Nếu không có hướng trước đó
+                direction = "unknown"
+        elif dy > 0:
+            direction = "out"
+        else:
+            direction = "in"
+            
+        # if direction != "unknown":
+        print(f"Track ID {track_id} Class {labels[class_id]} moving {direction}")
+        
+        # Cập nhật thông tin track
+        track_memory[track_id]['previous_centroid'] = centroid
+        track_memory[track_id]['previous_direction'] = direction
 
-        print(f"Class ID: {class_id}")
-
-    #     if labels[class_id] in yolo_list:
-    #         object_found = True
-
-    #     if labels[class_id] == "person":
-    #         person_count += 1
-
-    #     # Draw a bounding box rectangle and label on the image
-    #     color = [int(c) for c in colors[class_id]]
-    #     cv2.rectangle(img, (xmin, ymin), (xmax, ymax), color=color, thickness=thickness)
-    #     text = f"{labels[class_id]}: {confidence:.2f}"
-    #     # Calculate text width & height to draw the transparent boxes as background of the text
-    #     (text_width, text_height) = cv2.getTextSize(text, cv2.FONT_HERSHEY_SIMPLEX, fontScale=font_scale, thickness=thickness)[0]
-    #     text_offset_x = xmin
-    #     text_offset_y = ymin - 5
-    #     box_coords = ((text_offset_x, text_offset_y), (text_offset_x + text_width + 2, text_offset_y - text_height))
-    #     overlay = img.copy()
-    #     cv2.rectangle(overlay, box_coords[0], box_coords[1], color=color, thickness=cv2.FILLED)
-    #     # Add opacity (transparency to the box)
-    #     img = cv2.addWeighted(overlay, 0.6, img, 0.4, 0)
-    #     # Now put the text (label: confidence %)
-    #     cv2.putText(img, text, (xmin, ymin - 5), cv2.FONT_HERSHEY_SIMPLEX,
-    #         fontScale=font_scale, color=(0, 0, 0), thickness=thickness)
-
-    # frame_height, frame_width, _ = img.shape
-    # cv2.putText(img, f"People Count: {person_count}", (frame_width - 270, 30), cv2.FONT_HERSHEY_SIMPLEX,
-    #         fontScale=1, color=(0, 255, 0), thickness=2)
     return object_found
 
 def display_rtsp_with_pyav(rtsp_url, window_name="RTSP Stream"):
     # Khai báo sử dụng biến toàn cục
-    global blank, old_frame, thresh
+    global blank, old_frame, thresh, activity_count, start_frames, yolo_count
 
     # Initialize the RTSP reader
     reader = RTSPReader(rtsp_url)
@@ -116,17 +148,31 @@ def display_rtsp_with_pyav(rtsp_url, window_name="RTSP Stream"):
                     ssim_val = int(ssim(result, blank))
                     old_frame = final_frame
 
+
                 if ssim_val > thresh:
-                    process_yolo(frame)
+                    process_yolo(frame.copy())
+                #     activity_count += 1
+                #     if activity_count >= start_frames:
+                #         if process_yolo(frame.copy()):
+                #             yolo_count += 1
+                #         else:
+                #             yolo_count = 0
 
-                    # Kết thúc đo thời gian
-                    end_time = time.time()
-                    process_time = (end_time - start_time) * 1000  # Chuyển sang milliseconds
-                    print(f"Processing time: {process_time:.2f} ms")
+                #         if yolo_count > 1:
+                #             activity_count = 0
+                #             yolo_count = 0
+                    
+                # else:
+                #     activity_count = 0
+                #     yolo_count = 0
 
+                # Kết thúc đo thời gian
+                end_time = time.time()
+                process_time = (end_time - start_time) * 1000  # Chuyển sang milliseconds
+                # print(f"Processing time: {process_time:.2f} ms")
 
                 # Display the frame
-                cv2.imshow(window_name, frame)
+                cv2.imshow(window_name, frame.copy())
                 
                 # Check for exit key
                 if cv2.waitKey(1) & 0xFF == ord('q'):
@@ -150,8 +196,8 @@ if __name__ == "__main__":
     if len(sys.argv) > 1:
         rtsp_url = sys.argv[1]
     else:
-        rtsp_url = 'rtsp://admin:JDQOPY@cam110.ddns.net:554/ch1/main'
-        # rtsp_url = 'rtsp://admin:Tsicongnghe@123@dongbacdh.autoddns.com:554/profile1'
+        # rtsp_url = 'rtsp://admin:JDQOPY@cam110.ddns.net:554/ch1/main'
+        rtsp_url = 'rtsp://admin:Tsicongnghe@123@dongbacdh.autoddns.com:554/profile1'
         # rtsp_url = input("Enter RTSP URL (e.g., rtsp://username:password@ip:port/path): ")
     
     display_rtsp_with_pyav(rtsp_url)
