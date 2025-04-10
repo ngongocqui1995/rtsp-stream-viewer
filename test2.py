@@ -35,14 +35,33 @@ class_map = {"motorcycle": 0, "bicycle": 1}
 
 # Hàm tính bounding box từ polygon
 def polygon_to_bbox(polygon):
-    # Chuyển polygon thành numpy array
-    points = np.array(polygon)
-    # Tìm tọa độ min, max
-    x_min = np.min(points[:, 0])
-    y_min = np.min(points[:, 1])
-    x_max = np.max(points[:, 0])
-    y_max = np.max(points[:, 1])
-    return [x_min, y_min, x_max, y_max]
+    # Kiểm tra và xử lý định dạng polygon
+    try:
+        # Nếu polygon đã là mảng 2D [[x1, y1], [x2, y2], ...]
+        if isinstance(polygon[0], list) or (isinstance(polygon[0], (tuple, list)) and len(polygon[0]) == 2):
+            points = np.array(polygon)
+        else:
+            # Nếu polygon là mảng phẳng [x1, y1, x2, y2, ...]
+            # Thử reshape thành các cặp tọa độ
+            points = np.array(polygon).reshape(-1, 2)
+            
+        # Tìm tọa độ min, max
+        x_min = np.min(points[:, 0])
+        y_min = np.min(points[:, 1])
+        x_max = np.max(points[:, 0])
+        y_max = np.max(points[:, 1])
+        return [x_min, y_min, x_max, y_max]
+        
+    except Exception as e:
+        # In thông tin debug nếu vẫn lỗi
+        print(f"Lỗi xử lý polygon: {e}")
+        print(f"Cấu trúc polygon: {type(polygon)}")
+        if polygon:
+            print(f"Phần tử đầu tiên: {type(polygon[0])}")
+            print(f"Mẫu polygon: {polygon[:2]}")
+        
+        # Trả về giá trị mặc định nếu không thể xử lý
+        return [0, 0, 1, 1]
 
 # Xử lý từng file
 def process_files(file_list, split_name):
@@ -118,8 +137,8 @@ process_files(val_files, "val")
 
 # Tạo file data.yaml
 yaml_content = f"""# Dataset for motorcycle detection
-train: {os.path.join(OUTPUT_DIR, 'train')}
-val: {os.path.join(OUTPUT_DIR, 'val')}
+train: train
+val: val
 
 # Classes
 nc: {len(class_map)}
